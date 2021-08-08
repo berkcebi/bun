@@ -26,9 +26,25 @@ fn main() {
         .run();
 }
 
+#[derive(Debug, Clone, Copy)]
 struct Ability {
-    name: String,
+    name: &'static str,
     mana_points: u8,
+    use_duration: f32,
+}
+
+impl Ability {
+    const FIREBALL: Self = Self {
+        name: "Fireball",
+        mana_points: 25,
+        use_duration: 2.5,
+    };
+
+    const FIRE_BLAST: Self = Self {
+        name: "Fire Blast",
+        mana_points: 10,
+        use_duration: 0.0,
+    };
 }
 
 struct Player;
@@ -41,6 +57,16 @@ struct Mana {
 
 struct UseAbility {
     ability: Ability,
+    duration_timer: Timer,
+}
+
+impl UseAbility {
+    fn new(ability: Ability) -> Self {
+        Self {
+            ability,
+            duration_timer: Timer::from_seconds(ability.use_duration, false),
+        }
+    }
 }
 
 fn setup(mut commands: Commands) {
@@ -59,12 +85,15 @@ fn handle_keyboard_input(
     let player_entity = player_query.single().unwrap();
 
     if keyboard_input.just_pressed(KeyCode::Key1) {
-        commands.entity(player_entity).insert(UseAbility {
-            ability: Ability {
-                name: "Fireball".to_string(),
-                mana_points: 25,
-            },
-        });
+        commands
+            .entity(player_entity)
+            .insert(UseAbility::new(Ability::FIREBALL));
+    }
+
+    if keyboard_input.just_pressed(KeyCode::Key2) {
+        commands
+            .entity(player_entity)
+            .insert(UseAbility::new(Ability::FIRE_BLAST));
     }
 }
 
@@ -74,19 +103,36 @@ fn regen_mana(mut query: Query<&mut Mana>) {
             mana.points = (mana.points + mana.regen_points).min(mana.max_points);
         }
 
-        println!("{} / {}", mana.points, mana.max_points);
+        println!("Mana: {} / {}", mana.points, mana.max_points);
     }
 }
 
-fn use_ability(mut commands: Commands, mut query: Query<(Entity, &UseAbility, &mut Mana)>) {
-    for (entity, use_ability_intent, mut mana) in query.iter_mut() {
-        if use_ability_intent.ability.mana_points < mana.points {
-            mana.points -= use_ability_intent.ability.mana_points;
-            println!("Casting {}!", use_ability_intent.ability.name);
-        } else {
+fn use_ability(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(Entity, &mut UseAbility, &mut Mana)>,
+) {
+    for (entity, mut use_ability_intent, mut mana) in query.iter_mut() {
+        let ability = use_ability_intent.ability;
+
+        println!("Casting {}…", ability.name);
+
+        use_ability_intent.duration_timer.tick(time.delta());
+
+        if ability.mana_points > mana.points {
             println!("Not enough mana…");
+
+            commands.entity(entity).remove::<UseAbility>();
+            continue;
         }
 
-        commands.entity(entity).remove::<UseAbility>();
+        if use_ability_intent.duration_timer.finished() {
+            mana.points -= ability.mana_points;
+
+            println!("Casted {}!", ability.name);
+            println!("Mana: {} / {}", mana.points, mana.max_points);
+
+            commands.entity(entity).remove::<UseAbility>();
+        }
     }
 }
