@@ -3,6 +3,8 @@ use bevy::prelude::*;
 const WINDOW_WIDTH: f32 = 640.0;
 const WINDOW_HEIGHT: f32 = 512.0;
 
+const USE_ABILITY_COOLDOWN_DURATION: f32 = 1.5;
+
 fn main() {
     App::build()
         .insert_resource(ClearColor(Color::BLACK))
@@ -23,6 +25,8 @@ fn main() {
         )
         .add_system(handle_keyboard_input.system())
         .add_system(use_ability.system())
+        .add_system(add_use_ability_cooldown.system())
+        .add_system(remove_use_ability_cooldown.system())
         .run();
 }
 
@@ -69,6 +73,18 @@ impl UseAbility {
     }
 }
 
+struct UseAbilityCooldown {
+    duration_timer: Timer,
+}
+
+impl UseAbilityCooldown {
+    fn new() -> Self {
+        Self {
+            duration_timer: Timer::from_seconds(USE_ABILITY_COOLDOWN_DURATION, false),
+        }
+    }
+}
+
 fn setup(mut commands: Commands) {
     commands.spawn().insert(Player).insert(Mana {
         points: 50,
@@ -110,29 +126,72 @@ fn regen_mana(mut query: Query<&mut Mana>) {
 fn use_ability(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(Entity, &mut UseAbility, &mut Mana)>,
+    mut query: Query<(
+        Entity,
+        &mut UseAbility,
+        &mut Mana,
+        Option<&UseAbilityCooldown>,
+    )>,
 ) {
-    for (entity, mut use_ability_intent, mut mana) in query.iter_mut() {
-        let ability = use_ability_intent.ability;
+    for (entity, mut use_ability, mut mana, use_ability_cooldown) in query.iter_mut() {
+        let ability = use_ability.ability;
 
-        println!("Casting {}…", ability.name);
+        if use_ability.duration_timer.elapsed_secs() <= 0.0 {
+            println!("Casting {}…", ability.name);
+        }
 
-        use_ability_intent.duration_timer.tick(time.delta());
+        use_ability.duration_timer.tick(time.delta());
 
-        if ability.mana_points > mana.points {
-            println!("Not enough mana…");
+        if use_ability_cooldown.is_some() {
+            println!("Under global cooldown.");
 
             commands.entity(entity).remove::<UseAbility>();
             continue;
         }
 
-        if use_ability_intent.duration_timer.finished() {
+        if ability.mana_points > mana.points {
+            println!("Not enough mana.");
+
+            commands.entity(entity).remove::<UseAbility>();
+            continue;
+        }
+
+        if use_ability.duration_timer.finished() {
             mana.points -= ability.mana_points;
 
             println!("Casted {}!", ability.name);
             println!("Mana: {} / {}", mana.points, mana.max_points);
 
             commands.entity(entity).remove::<UseAbility>();
+        }
+    }
+}
+
+fn add_use_ability_cooldown(
+    mut commands: Commands,
+    query: Query<(Entity, Option<&UseAbilityCooldown>), Added<UseAbility>>,
+) {
+    for (entity, use_ability_cooldown) in query.iter() {
+        if use_ability_cooldown.is_some() {
+            continue;
+        }
+
+        println!("Global cooldown in effect.");
+        commands.entity(entity).insert(UseAbilityCooldown::new());
+    }
+}
+
+fn remove_use_ability_cooldown(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(Entity, &mut UseAbilityCooldown)>,
+) {
+    for (entity, mut use_ability_cooldown) in query.iter_mut() {
+        use_ability_cooldown.duration_timer.tick(time.delta());
+
+        if use_ability_cooldown.duration_timer.finished() {
+            println!("Global cooldown over.");
+            commands.entity(entity).remove::<UseAbilityCooldown>();
         }
     }
 }
