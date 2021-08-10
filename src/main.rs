@@ -25,7 +25,6 @@ fn main() {
         )
         .add_system(handle_keyboard_input.system())
         .add_system(use_ability.system())
-        .add_system(add_use_ability_cooldown.system())
         .add_system(remove_use_ability_cooldown.system())
         .run();
 }
@@ -137,24 +136,26 @@ fn use_ability(
         let ability = use_ability.ability;
 
         if use_ability.duration_timer.elapsed_secs() <= 0.0 {
+            if use_ability_cooldown.is_some() {
+                println!("Under global cooldown.");
+
+                commands.entity(entity).remove::<UseAbility>();
+                continue;
+            }
+
+            if ability.mana_points > mana.points {
+                println!("Not enough mana.");
+
+                commands.entity(entity).remove::<UseAbility>();
+                continue;
+            }
+
             println!("Casting {}…", ability.name);
+
+            commands.entity(entity).insert(UseAbilityCooldown::new());
         }
 
         use_ability.duration_timer.tick(time.delta());
-
-        if use_ability_cooldown.is_some() {
-            println!("Under global cooldown.");
-
-            commands.entity(entity).remove::<UseAbility>();
-            continue;
-        }
-
-        if ability.mana_points > mana.points {
-            println!("Not enough mana.");
-
-            commands.entity(entity).remove::<UseAbility>();
-            continue;
-        }
 
         if use_ability.duration_timer.finished() {
             mana.points -= ability.mana_points;
@@ -164,20 +165,6 @@ fn use_ability(
 
             commands.entity(entity).remove::<UseAbility>();
         }
-    }
-}
-
-fn add_use_ability_cooldown(
-    mut commands: Commands,
-    query: Query<(Entity, Option<&UseAbilityCooldown>), Added<UseAbility>>,
-) {
-    for (entity, use_ability_cooldown) in query.iter() {
-        if use_ability_cooldown.is_some() {
-            continue;
-        }
-
-        println!("Global cooldown in effect.");
-        commands.entity(entity).insert(UseAbilityCooldown::new());
     }
 }
 
