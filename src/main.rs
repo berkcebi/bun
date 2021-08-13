@@ -4,6 +4,7 @@ const WINDOW_WIDTH: f32 = 640.0;
 const WINDOW_HEIGHT: f32 = 512.0;
 
 const USE_ABILITY_COOLDOWN_DURATION: f32 = 1.5;
+const REGEN_MANA_COOLDOWN_DURATION: f32 = 5.0;
 
 fn main() {
     App::build()
@@ -26,6 +27,7 @@ fn main() {
         .add_system(handle_keyboard_input.system())
         .add_system(use_ability.system())
         .add_system(remove_use_ability_cooldown.system())
+        .add_system(remove_regen_mana_cooldown.system())
         .run();
 }
 
@@ -84,6 +86,18 @@ impl UseAbilityCooldown {
     }
 }
 
+struct RegenManaCooldown {
+    duration_timer: Timer,
+}
+
+impl RegenManaCooldown {
+    fn new() -> Self {
+        Self {
+            duration_timer: Timer::from_seconds(REGEN_MANA_COOLDOWN_DURATION, false),
+        }
+    }
+}
+
 fn setup(mut commands: Commands) {
     commands.spawn().insert(Player).insert(Mana {
         points: 50,
@@ -112,7 +126,7 @@ fn handle_keyboard_input(
     }
 }
 
-fn regen_mana(mut query: Query<&mut Mana>) {
+fn regen_mana(mut query: Query<&mut Mana, (Without<UseAbility>, Without<RegenManaCooldown>)>) {
     for mut mana in query.iter_mut() {
         if mana.points < mana.max_points {
             mana.points = (mana.points + mana.regen_points).min(mana.max_points);
@@ -164,6 +178,7 @@ fn use_ability(
             println!("Mana: {} / {}", mana.points, mana.max_points);
 
             commands.entity(entity).remove::<UseAbility>();
+            commands.entity(entity).insert(RegenManaCooldown::new());
         }
     }
 }
@@ -179,6 +194,20 @@ fn remove_use_ability_cooldown(
         if use_ability_cooldown.duration_timer.finished() {
             println!("Global cooldown over.");
             commands.entity(entity).remove::<UseAbilityCooldown>();
+        }
+    }
+}
+
+fn remove_regen_mana_cooldown(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(Entity, &mut RegenManaCooldown)>,
+) {
+    for (entity, mut regen_mana_cooldown) in query.iter_mut() {
+        regen_mana_cooldown.duration_timer.tick(time.delta());
+
+        if regen_mana_cooldown.duration_timer.finished() {
+            commands.entity(entity).remove::<RegenManaCooldown>();
         }
     }
 }
