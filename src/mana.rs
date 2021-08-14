@@ -39,8 +39,6 @@ fn regen_mana(mut query: Query<&mut Mana, (Without<UseAbility>, Without<RegenMan
         if mana.points < mana.max_points {
             mana.points = (mana.points + mana.regen_points).min(mana.max_points);
         }
-
-        println!("Mana: {} / {}", mana.points, mana.max_points);
     }
 }
 

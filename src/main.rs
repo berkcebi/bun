@@ -1,9 +1,11 @@
 mod ability;
+mod interface;
 mod mana;
 mod player;
 
 use ability::AbilityPlugin;
 use bevy::prelude::*;
+use interface::InterfacePlugin;
 use mana::ManaPlugin;
 use player::PlayerPlugin;
 
@@ -22,6 +24,7 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(AbilityPlugin)
+        .add_plugin(InterfacePlugin)
         .add_plugin(ManaPlugin)
         .add_plugin(PlayerPlugin)
         .add_system(bevy::input::system::exit_on_esc_system.system())

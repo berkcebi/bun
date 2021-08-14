@@ -100,7 +100,6 @@ fn use_ability(
             mana.points -= ability.mana_points;
 
             println!("Casted {}!", ability.name);
-            println!("Mana: {} / {}", mana.points, mana.max_points);
 
             commands.entity(entity).remove::<UseAbility>();
             commands.entity(entity).insert(RegenManaCooldown::new());
