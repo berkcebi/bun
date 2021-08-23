@@ -15,10 +15,10 @@ impl Plugin for InterfacePlugin {
 fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 
-    let font = asset_server.load("fonts/font.ttf");
+    let font = asset_server.load("fonts/pinch.ttf");
     let text_style = TextStyle {
         font,
-        font_size: 24.0,
+        font_size: 20.0,
         color: Color::WHITE,
     };
 
@@ -37,5 +37,5 @@ fn update_mana_text_value(
     let mut player_mana_text = player_mana_text_query.single_mut().unwrap();
     let player_mana = player_mana_query.single().unwrap();
 
-    player_mana_text.sections[0].value = format!("Mana: {}", player_mana.points);
+    player_mana_text.sections[0].value = format!("Mana: {} / {}", player_mana.points, player_mana.max_points);
 }
