@@ -1,5 +1,6 @@
 use crate::{
     ability::{Ability, UseAbility},
+    health::Health,
     mana::Mana,
 };
 use bevy::prelude::*;
@@ -16,11 +17,18 @@ impl Plugin for PlayerPlugin {
 }
 
 fn spawn(mut commands: Commands) {
-    commands.spawn().insert(Player).insert(Mana {
-        points: 50,
-        max_points: 100,
-        regen_points: 1,
-    });
+    commands
+        .spawn()
+        .insert(Player)
+        .insert(Health {
+            points: 30,
+            max_points: 40,
+        })
+        .insert(Mana {
+            points: 50,
+            max_points: 100,
+            regen_points: 1,
+        });
 }
 
 fn handle_keyboard_input(
