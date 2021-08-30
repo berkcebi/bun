@@ -9,8 +9,8 @@ use interface::InterfacePlugin;
 use mana::ManaPlugin;
 use player::PlayerPlugin;
 
-const WINDOW_WIDTH: f32 = 640.0;
-const WINDOW_HEIGHT: f32 = 512.0;
+const WINDOW_WIDTH: f32 = 800.0;
+const WINDOW_HEIGHT: f32 = 600.0;
 
 fn main() {
     App::build()

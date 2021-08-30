@@ -19,7 +19,7 @@ fn spawn(mut commands: Commands) {
     commands.spawn().insert(Player).insert(Mana {
         points: 50,
         max_points: 100,
-        regen_points: 3,
+        regen_points: 1,
     });
 }
 
