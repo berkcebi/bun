@@ -3,11 +3,11 @@ use bevy::prelude::*;
 
 const USE_ABILITY_COOLDOWN_DURATION: f32 = 1.5;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct Ability {
-    name: &'static str,
-    mana_points: u8,
-    use_duration: f32,
+    pub name: &'static str,
+    pub mana_points: u8,
+    pub use_duration: f32,
 }
 
 impl Ability {
@@ -25,8 +25,8 @@ impl Ability {
 }
 
 pub struct UseAbility {
-    ability: Ability,
-    duration_timer: Timer,
+    pub ability: Ability,
+    pub duration_timer: Timer,
 }
 
 impl UseAbility {
@@ -86,8 +86,6 @@ fn use_ability(
                 commands.entity(entity).remove::<UseAbility>();
                 continue;
             }
-
-            println!("Casting {}…", ability.name);
 
             commands
                 .entity(entity)
