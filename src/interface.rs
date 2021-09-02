@@ -65,33 +65,21 @@ impl BarComponent for UseAbility {
     }
 }
 
-// TODO: Define components for the bars only and access the children directly: https://bevy-cheatbook.github.io/programming/parent-child.html
-#[derive(Clone, Copy)]
 struct HealthBar;
-struct HealthBarIndicator;
-struct HealthBarText;
-
-#[derive(Clone, Copy)]
 struct ManaBar;
-struct ManaBarIndicator;
-struct ManaBarText;
-
-#[derive(Clone, Copy)]
 struct CastBar;
-struct CastBarIndicator;
-struct CastBarText;
 
 pub struct InterfacePlugin;
 
 impl Plugin for InterfacePlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_startup_system(setup.system())
-            .add_system(update_bar_text::<Health, HealthBarText>.system())
-            .add_system(update_bar_indicator::<Health, HealthBarIndicator>.system())
-            .add_system(update_bar_text::<Mana, ManaBarText>.system())
-            .add_system(update_bar_indicator::<Mana, ManaBarIndicator>.system())
-            .add_system(update_bar_text::<UseAbility, CastBarText>.system())
-            .add_system(update_bar_indicator::<UseAbility, CastBarIndicator>.system())
+            .add_system(update_bar_text::<Health, HealthBar>.system())
+            .add_system(update_bar_indicator::<Health, HealthBar>.system())
+            .add_system(update_bar_text::<Mana, ManaBar>.system())
+            .add_system(update_bar_indicator::<Mana, ManaBar>.system())
+            .add_system(update_bar_text::<UseAbility, CastBar>.system())
+            .add_system(update_bar_indicator::<UseAbility, CastBar>.system())
             .add_system(update_cast_bar_visible.system());
     }
 }
@@ -116,8 +104,6 @@ fn setup(
         ),
         BAR_WIDTH_SMALL,
         HealthBar,
-        HealthBarIndicator,
-        HealthBarText,
         &mut commands,
         bar_text_font.clone(),
         &mut color_materials,
@@ -132,8 +118,6 @@ fn setup(
         ),
         BAR_WIDTH_SMALL,
         ManaBar,
-        ManaBarIndicator,
-        ManaBarText,
         &mut commands,
         bar_text_font.clone(),
         &mut color_materials,
@@ -144,8 +128,6 @@ fn setup(
         Vec3::new(0.0, HEIGHT / -4.0, 0.0),
         BAR_WIDTH_LARGE,
         CastBar,
-        CastBarIndicator,
-        CastBarText,
         &mut commands,
         bar_text_font.clone(),
         &mut color_materials,
@@ -153,42 +135,56 @@ fn setup(
 }
 
 fn update_bar_text<T: BarComponent, U: Component>(
-    mut bar_text_query: Query<&mut Text, With<U>>,
+    bar_children_query: Query<&Children, With<U>>,
+    mut bar_children_text_query: Query<&mut Text>,
     component_query: Query<&T, With<Player>>,
 ) {
-    let mut bar_text = bar_text_query.single_mut().unwrap();
-
     let component = match component_query.single() {
-        Ok(component) => component,
+        Ok(result) => result,
         Err(_) => return,
     };
 
-    bar_text.sections[0].value = component.get_text();
+    let bar_children = bar_children_query.single().unwrap();
+    for &bar_child in bar_children.iter() {
+        let mut bar_text = match bar_children_text_query.get_mut(bar_child) {
+            Ok(result) => result,
+            Err(_) => continue,
+        };
+
+        bar_text.sections[0].value = component.get_text();
+    }
 }
 
 fn update_bar_indicator<T: BarComponent, U: Component>(
-    mut bar_indicator_query: Query<(&mut Sprite, &mut Transform, &Parent), With<U>>,
+    bar_query: Query<(&Children, &Sprite), With<U>>,
+    mut bar_children_indicator_query: Query<(&mut Sprite, &mut Transform), Without<U>>,
     component_query: Query<&T, With<Player>>,
-    parent_query: Query<&Sprite, Without<U>>,
 ) {
-    let (mut bar_indicator_sprite, mut bar_indicator_transform, parent) =
-        bar_indicator_query.single_mut().unwrap();
-
     let component = match component_query.single() {
-        Ok(component) => component,
+        Ok(result) => result,
         Err(_) => return,
     };
 
-    let parent_sprite = parent_query.get(parent.0).unwrap();
-    let bar_width = parent_sprite.size.x;
+    let (bar_children, bar_sprite) = bar_query.single().unwrap();
+    for &bar_child in bar_children.iter() {
+        let (mut bar_indicator_sprite, mut bar_indicator_transform) =
+            match bar_children_indicator_query.get_mut(bar_child) {
+                Ok(result) => result,
+                Err(_) => continue,
+            };
 
-    let bar_indicator_width = (bar_width * component.get_value() / component.get_max_value()).floor();
-    bar_indicator_sprite.size.x = bar_indicator_width;
-    bar_indicator_transform.translation.x = bar_width * -0.5 + bar_indicator_width / 2.0;
+        let bar_width = bar_sprite.size.x;
+
+        let bar_indicator_width =
+            (bar_width * component.get_value() / component.get_max_value()).floor();
+        bar_indicator_sprite.size.x = bar_indicator_width;
+        bar_indicator_transform.translation.x = bar_width * -0.5 + bar_indicator_width / 2.0;
+    }
 }
 
 fn update_cast_bar_visible(
-    mut bar_visiblity_query: Query<&mut Visible, With<CastBar>>,
+    mut bar_query: Query<(&Children, &mut Visible), With<CastBar>>,
+    mut bar_children_visible_query: Query<&mut Visible, Without<CastBar>>,
     use_ability_query: Query<&UseAbility, With<Player>>,
 ) {
     let is_visible = match use_ability_query.single() {
@@ -199,18 +195,25 @@ fn update_cast_bar_visible(
         Err(_) => false,
     };
 
-    for mut bar_visible in bar_visiblity_query.iter_mut() {
+    let (bar_children, mut bar_visible) = bar_query.single_mut().unwrap();
+
+    bar_visible.is_visible = is_visible;
+
+    for &bar_child in bar_children.iter() {
+        let mut bar_visible = match bar_children_visible_query.get_mut(bar_child) {
+            Ok(result) => result,
+            Err(_) => continue,
+        };
+
         bar_visible.is_visible = is_visible;
     }
 }
 
-fn spawn_bar<T: Component + Copy, U: Component, V: Component>(
+fn spawn_bar<T: Component>(
     color: Color,
     translation: Vec3,
     width: f32,
     component: T,
-    indicator_component: U,
-    text_component: V,
     commands: &mut Commands,
     bar_text_font_handle: Handle<Font>,
     color_materials: &mut ResMut<Assets<ColorMaterial>>,
@@ -227,14 +230,11 @@ fn spawn_bar<T: Component + Copy, U: Component, V: Component>(
         })
         .insert(component)
         .with_children(|parent| {
-            parent
-                .spawn_bundle(SpriteBundle {
-                    material: color_materials.add(color.into()),
-                    sprite: Sprite::new(Vec2::new(0.0, BAR_HEIGHT)),
-                    ..Default::default()
-                })
-                .insert(component)
-                .insert(indicator_component);
+            parent.spawn_bundle(SpriteBundle {
+                material: color_materials.add(color.into()),
+                sprite: Sprite::new(Vec2::new(0.0, BAR_HEIGHT)),
+                ..Default::default()
+            });
 
             let text_style = TextStyle {
                 font: bar_text_font_handle.clone(),
@@ -246,17 +246,14 @@ fn spawn_bar<T: Component + Copy, U: Component, V: Component>(
                 horizontal: HorizontalAlign::Center,
             };
 
-            parent
-                .spawn_bundle(Text2dBundle {
-                    text: Text::with_section("", text_style.clone(), text_alignment),
-                    transform: Transform::from_translation(Vec3::new(
-                        0.0,
-                        BAR_TEXT_VERTICAL_OFFSET,
-                        1.0,
-                    )),
-                    ..Default::default()
-                })
-                .insert(component)
-                .insert(text_component);
+            parent.spawn_bundle(Text2dBundle {
+                text: Text::with_section("", text_style.clone(), text_alignment),
+                transform: Transform::from_translation(Vec3::new(
+                    0.0,
+                    BAR_TEXT_VERTICAL_OFFSET,
+                    1.0,
+                )),
+                ..Default::default()
+            });
         });
 }
