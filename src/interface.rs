@@ -21,46 +21,37 @@ const HEALTH_BAR_COLOR: Color = Color::rgb(231.0 / 255.0, 39.0 / 255.0, 37.0 / 2
 const MANA_BAR_COLOR: Color = Color::rgb(43.0 / 255.0, 102.0 / 255.0, 201.0 / 255.0);
 const CAST_BAR_COLOR: Color = Color::rgb(1.0, 240.0 / 255.0, 0.0);
 
-// TODO: Consider renaming.
-trait BarComponent: Component {
-    // TODO: Consider fraction instead of value and max value.
-    fn get_value(&self) -> f32;
-    fn get_max_value(&self) -> f32;
-    fn get_text(&self) -> String {
-        format!("{}/{}", self.get_value(), self.get_max_value())
+trait Progressive: Component {
+    fn get_progress(&self) -> f32;
+    fn get_description(&self) -> String;
+}
+
+impl Progressive for Health {
+    fn get_progress(&self) -> f32 {
+        self.points as f32 / self.max_points as f32
+    }
+
+    fn get_description(&self) -> String {
+        format!("{}/{}", self.points, self.max_points)
     }
 }
 
-impl BarComponent for Health {
-    fn get_value(&self) -> f32 {
-        self.points as f32
+impl Progressive for Mana {
+    fn get_progress(&self) -> f32 {
+        self.points as f32 / self.max_points as f32
     }
 
-    fn get_max_value(&self) -> f32 {
-        self.max_points as f32
-    }
-}
-
-impl BarComponent for Mana {
-    fn get_value(&self) -> f32 {
-        self.points as f32
-    }
-
-    fn get_max_value(&self) -> f32 {
-        self.max_points as f32
+    fn get_description(&self) -> String {
+        format!("{}/{}", self.points, self.max_points)
     }
 }
 
-impl BarComponent for UseAbility {
-    fn get_value(&self) -> f32 {
-        self.duration_timer.elapsed_secs()
+impl Progressive for UseAbility {
+    fn get_progress(&self) -> f32 {
+        self.duration_timer.percent()
     }
 
-    fn get_max_value(&self) -> f32 {
-        self.duration_timer.duration().as_secs_f32()
-    }
-
-    fn get_text(&self) -> String {
+    fn get_description(&self) -> String {
         self.ability.name.to_string()
     }
 }
@@ -134,12 +125,12 @@ fn setup(
     );
 }
 
-fn update_bar_text<T: BarComponent, U: Component>(
+fn update_bar_text<T: Progressive, U: Component>(
     bar_children_query: Query<&Children, With<U>>,
     mut bar_children_text_query: Query<&mut Text>,
-    component_query: Query<&T, With<Player>>,
+    progressive_query: Query<&T, With<Player>>,
 ) {
-    let component = match component_query.single() {
+    let progressive = match progressive_query.single() {
         Ok(result) => result,
         Err(_) => return,
     };
@@ -151,16 +142,16 @@ fn update_bar_text<T: BarComponent, U: Component>(
             Err(_) => continue,
         };
 
-        bar_text.sections[0].value = component.get_text();
+        bar_text.sections[0].value = progressive.get_description();
     }
 }
 
-fn update_bar_indicator<T: BarComponent, U: Component>(
+fn update_bar_indicator<T: Progressive, U: Component>(
     bar_query: Query<(&Children, &Sprite), With<U>>,
     mut bar_children_indicator_query: Query<(&mut Sprite, &mut Transform), Without<U>>,
-    component_query: Query<&T, With<Player>>,
+    progressive_query: Query<&T, With<Player>>,
 ) {
-    let component = match component_query.single() {
+    let progressive = match progressive_query.single() {
         Ok(result) => result,
         Err(_) => return,
     };
@@ -175,8 +166,7 @@ fn update_bar_indicator<T: BarComponent, U: Component>(
 
         let bar_width = bar_sprite.size.x;
 
-        let bar_indicator_width =
-            (bar_width * component.get_value() / component.get_max_value()).floor();
+        let bar_indicator_width = (bar_width * progressive.get_progress()).floor();
         bar_indicator_sprite.size.x = bar_indicator_width;
         bar_indicator_transform.translation.x = bar_width * -0.5 + bar_indicator_width / 2.0;
     }
