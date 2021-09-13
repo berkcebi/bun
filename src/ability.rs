@@ -74,14 +74,14 @@ fn use_ability(
 
         if use_ability.duration_timer.elapsed_secs() <= 0.0 {
             if use_ability_cooldown.is_some() {
-                println!("Under global cooldown.");
+                info!("Under global cooldown.");
 
                 commands.entity(entity).remove::<UseAbility>();
                 continue;
             }
 
             if ability.mana_points > mana.points {
-                println!("Not enough mana.");
+                info!("Not enough mana.");
 
                 commands.entity(entity).remove::<UseAbility>();
                 continue;
@@ -97,7 +97,7 @@ fn use_ability(
         if use_ability.duration_timer.finished() {
             mana.points -= ability.mana_points;
 
-            println!("Casted {}!", ability.name);
+            info!("Casted {}!", ability.name);
 
             commands.entity(entity).remove::<UseAbility>();
             commands.entity(entity).insert(RegenManaCooldown::new());
@@ -114,7 +114,7 @@ fn remove_use_ability_cooldown(
         use_ability_cooldown.duration_timer.tick(time.delta());
 
         if use_ability_cooldown.duration_timer.finished() {
-            println!("Global cooldown over.");
+            info!("Global cooldown over.");
             commands.entity(entity).remove::<UseAbilityCooldown>();
         }
     }
