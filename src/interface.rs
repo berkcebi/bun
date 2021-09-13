@@ -166,7 +166,7 @@ fn update_bar_indicator<T: Progressive, U: Component>(
 
         let bar_width = bar_sprite.size.x;
 
-        let bar_indicator_width = (bar_width * progressive.get_progress()).floor();
+        let bar_indicator_width = (bar_width * progressive.get_progress()).round();
         bar_indicator_sprite.size.x = bar_indicator_width;
         bar_indicator_transform.translation.x = bar_width * -0.5 + bar_indicator_width / 2.0;
     }
