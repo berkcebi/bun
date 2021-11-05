@@ -1,5 +1,5 @@
 use crate::{
-    action::{GainHealth, LoseHealth},
+    action::{Action, TargetAction},
     mana::{Mana, RegenManaCooldown},
 };
 use bevy::prelude::*;
@@ -11,7 +11,7 @@ pub struct Ability {
     pub name: &'static str,
     pub mana_points: u8,
     pub use_duration: f32,
-    // TODO: Change to array.
+    // FIXME: Change to array.
     pub action: Action,
 }
 
@@ -20,28 +20,22 @@ impl Ability {
         name: "Fireball",
         mana_points: 25,
         use_duration: 2.5,
-        action: Action::LoseHealth(10),
+        action: Action::LoseHealth { points: 10 },
     };
 
     pub const FIRE_BLAST: Self = Self {
         name: "Fire Blast",
         mana_points: 10,
         use_duration: 0.0,
-        action: Action::LoseHealth(5),
+        action: Action::LoseHealth { points: 5 },
     };
 
     pub const LESSER_HEAL: Self = Self {
         name: "Lesser Heal",
         mana_points: 15,
         use_duration: 1.5,
-        action: Action::GainHealth(20),
+        action: Action::GainHealth { points: 20 },
     };
-}
-
-#[derive(Clone, Copy)]
-pub enum Action {
-    LoseHealth(u8),
-    GainHealth(u8),
 }
 
 pub struct UseAbility {
@@ -84,8 +78,7 @@ impl Plugin for AbilityPlugin {
 fn use_ability(
     mut commands: Commands,
     time: Res<Time>,
-    mut lose_health_event_writer: EventWriter<LoseHealth>,
-    mut gain_health_event_writer: EventWriter<GainHealth>,
+    mut target_action_event_writer: EventWriter<TargetAction>,
     mut query: Query<(
         Entity,
         &mut UseAbility,
@@ -126,20 +119,10 @@ fn use_ability(
             commands.entity(entity).remove::<UseAbility>();
             commands.entity(entity).insert(RegenManaCooldown::new());
 
-            match use_ability.ability.action {
-                Action::LoseHealth(points) => {
-                    lose_health_event_writer.send(LoseHealth {
-                        target: use_ability.target,
-                        points,
-                    });
-                }
-                Action::GainHealth(points) => {
-                    gain_health_event_writer.send(GainHealth {
-                        target: use_ability.target,
-                        points,
-                    });
-                }
-            }
+            target_action_event_writer.send(TargetAction {
+                target: use_ability.target,
+                action: use_ability.ability.action,
+            });
         }
     }
 }

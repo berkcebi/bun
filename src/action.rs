@@ -1,68 +1,51 @@
+use crate::health::Health;
 use bevy::prelude::*;
 
-use crate::health::Health;
-
-// FIXME: Consider using an enum instead, shared with Ability.
-pub struct LoseHealth {
+pub struct TargetAction {
     pub target: Entity,
-    pub points: u8,
+    pub action: Action,
 }
 
-pub struct GainHealth {
-    pub target: Entity,
-    pub points: u8,
+#[derive(Clone, Copy)]
+pub enum Action {
+    LoseHealth { points: u8 },
+    GainHealth { points: u8 },
 }
 
 pub struct ActionPlugin;
 
 impl Plugin for ActionPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_event::<LoseHealth>()
-            .add_event::<GainHealth>()
-            .add_system(lose_health.system())
-            .add_system(gain_health.system());
+        app.add_event::<TargetAction>()
+            .add_system(perform_target_action.system());
     }
 }
 
-fn lose_health(
-    mut lose_health_event_reader: EventReader<LoseHealth>,
-    mut query: Query<&mut Health>,
+fn perform_target_action(
+    mut target_action_event_reader: EventReader<TargetAction>,
+    mut health_query: Query<&mut Health>,
 ) {
-    for lose_health in lose_health_event_reader.iter() {
-        let mut health = match query.get_mut(lose_health.target) {
-            Ok(result) => result,
-            Err(_) => {
-                error!("Querying health component for lose health event target failed.");
+    for target_action in target_action_event_reader.iter() {
+        let target = target_action.target;
 
-                continue;
+        match target_action.action {
+            Action::LoseHealth { points } => {
+                let mut health = health_query.get_mut(target).unwrap();
+
+                if health.points > points {
+                    health.points = health.points - points;
+                } else {
+                    // TODO: Remove from game.
+                    health.points = 0;
+
+                    info!("{:?} died.", target);
+                }
             }
-        };
+            Action::GainHealth { points } => {
+                let mut health = health_query.get_mut(target).unwrap();
 
-        if health.points > lose_health.points {
-            health.points = health.points - lose_health.points;
-        } else {
-            // TODO: Remove from game.
-            health.points = 0;
-
-            info!("{:?} died.", lose_health.target);
+                health.points = (health.points + points).min(health.max_points);
+            }
         }
-    }
-}
-
-fn gain_health(
-    mut gain_health_event_reader: EventReader<GainHealth>,
-    mut query: Query<&mut Health>,
-) {
-    for gain_health in gain_health_event_reader.iter() {
-        let mut health = match query.get_mut(gain_health.target) {
-            Ok(result) => result,
-            Err(_) => {
-                error!("Querying health component for gain health event target failed.");
-
-                continue;
-            }
-        };
-
-        health.points = (health.points + gain_health.points).min(health.max_points);
     }
 }
