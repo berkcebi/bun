@@ -1,4 +1,7 @@
-use crate::mana::{Mana, RegenManaCooldown};
+use crate::{
+    action::{GainHealth, LoseHealth},
+    mana::{Mana, RegenManaCooldown},
+};
 use bevy::prelude::*;
 
 const USE_ABILITY_COOLDOWN_DURATION: f32 = 1.5;
@@ -8,6 +11,8 @@ pub struct Ability {
     pub name: &'static str,
     pub mana_points: u8,
     pub use_duration: f32,
+    // TODO: Change to array.
+    pub action: Action,
 }
 
 impl Ability {
@@ -15,24 +20,41 @@ impl Ability {
         name: "Fireball",
         mana_points: 25,
         use_duration: 2.5,
+        action: Action::LoseHealth(10),
     };
 
     pub const FIRE_BLAST: Self = Self {
         name: "Fire Blast",
         mana_points: 10,
         use_duration: 0.0,
+        action: Action::LoseHealth(5),
     };
+
+    pub const LESSER_HEAL: Self = Self {
+        name: "Lesser Heal",
+        mana_points: 15,
+        use_duration: 1.5,
+        action: Action::GainHealth(20),
+    };
+}
+
+#[derive(Clone, Copy)]
+pub enum Action {
+    LoseHealth(u8),
+    GainHealth(u8),
 }
 
 pub struct UseAbility {
     pub ability: Ability,
+    pub target: Entity,
     pub duration_timer: Timer,
 }
 
 impl UseAbility {
-    pub fn new(ability: Ability) -> Self {
+    pub fn new(ability: Ability, target: Entity) -> Self {
         Self {
             ability,
+            target,
             duration_timer: Timer::from_seconds(ability.use_duration, false),
         }
     }
@@ -62,6 +84,8 @@ impl Plugin for AbilityPlugin {
 fn use_ability(
     mut commands: Commands,
     time: Res<Time>,
+    mut lose_health_event_writer: EventWriter<LoseHealth>,
+    mut gain_health_event_writer: EventWriter<GainHealth>,
     mut query: Query<(
         Entity,
         &mut UseAbility,
@@ -97,10 +121,25 @@ fn use_ability(
         if use_ability.duration_timer.finished() {
             mana.points -= ability.mana_points;
 
-            info!("Casted {}!", ability.name);
+            info!("Casted {}.", ability.name);
 
             commands.entity(entity).remove::<UseAbility>();
             commands.entity(entity).insert(RegenManaCooldown::new());
+
+            match use_ability.ability.action {
+                Action::LoseHealth(points) => {
+                    lose_health_event_writer.send(LoseHealth {
+                        target: use_ability.target,
+                        points,
+                    });
+                }
+                Action::GainHealth(points) => {
+                    gain_health_event_writer.send(GainHealth {
+                        target: use_ability.target,
+                        points,
+                    });
+                }
+            }
         }
     }
 }

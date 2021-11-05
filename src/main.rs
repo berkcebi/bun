@@ -1,10 +1,12 @@
 mod ability;
+mod action;
 mod health;
 mod interface;
 mod mana;
 mod player;
 
 use ability::AbilityPlugin;
+use action::ActionPlugin;
 use bevy::prelude::*;
 use interface::InterfacePlugin;
 use mana::ManaPlugin;
@@ -25,6 +27,7 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(AbilityPlugin)
+        .add_plugin(ActionPlugin)
         .add_plugin(InterfacePlugin)
         .add_plugin(ManaPlugin)
         .add_plugin(PlayerPlugin)

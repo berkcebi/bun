@@ -41,12 +41,18 @@ fn handle_keyboard_input(
     if keyboard_input.just_pressed(KeyCode::Key1) {
         commands
             .entity(player_entity)
-            .insert(UseAbility::new(Ability::FIREBALL));
+            .insert(UseAbility::new(Ability::FIREBALL, player_entity));
     }
 
     if keyboard_input.just_pressed(KeyCode::Key2) {
         commands
             .entity(player_entity)
-            .insert(UseAbility::new(Ability::FIRE_BLAST));
+            .insert(UseAbility::new(Ability::FIRE_BLAST, player_entity));
+    }
+
+    if keyboard_input.just_pressed(KeyCode::Key3) {
+        commands
+            .entity(player_entity)
+            .insert(UseAbility::new(Ability::LESSER_HEAL, player_entity));
     }
 }
