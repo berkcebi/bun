@@ -1,35 +1,35 @@
 use crate::health::Health;
 use bevy::prelude::*;
 
-pub struct TargetAction {
-    pub target: Entity,
-    pub action: Action,
-}
-
 #[derive(Clone, Copy)]
-pub enum Action {
+pub enum Effect {
     LoseHealth { points: u8 },
     GainHealth { points: u8 },
 }
 
-pub struct ActionPlugin;
+pub struct AffectTarget {
+    pub target: Entity,
+    pub effect: Effect,
+}
 
-impl Plugin for ActionPlugin {
+pub struct EffectPlugin;
+
+impl Plugin for EffectPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_event::<TargetAction>()
-            .add_system(perform_target_action.system());
+        app.add_event::<AffectTarget>()
+            .add_system(affect_target.system());
     }
 }
 
-fn perform_target_action(
-    mut target_action_event_reader: EventReader<TargetAction>,
+fn affect_target(
+    mut affect_target_event_reader: EventReader<AffectTarget>,
     mut health_query: Query<&mut Health>,
 ) {
-    for target_action in target_action_event_reader.iter() {
-        let target = target_action.target;
+    for affect_target in affect_target_event_reader.iter() {
+        let target = affect_target.target;
 
-        match target_action.action {
-            Action::LoseHealth { points } => {
+        match affect_target.effect {
+            Effect::LoseHealth { points } => {
                 let mut health = health_query.get_mut(target).unwrap();
 
                 if health.points > points {
@@ -41,7 +41,7 @@ fn perform_target_action(
                     info!("{:?} died.", target);
                 }
             }
-            Action::GainHealth { points } => {
+            Effect::GainHealth { points } => {
                 let mut health = health_query.get_mut(target).unwrap();
 
                 health.points = (health.points + points).min(health.max_points);

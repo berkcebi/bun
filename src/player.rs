@@ -1,6 +1,6 @@
 use crate::{
     ability::{Ability, TryAbility},
-    action::Action,
+    effect::Effect,
     health::Health,
     mana::Mana,
 };
@@ -46,8 +46,8 @@ fn handle_keyboard_input(
                 name: "Fireball",
                 mana_points: 25,
                 use_duration: 2.5,
-                action: Action::LoseHealth { points: 10 },
-                secondary_action: None,
+                effect: Effect::LoseHealth { points: 10 },
+                secondary_effect: None,
             },
             target: player_entity,
         });
@@ -60,8 +60,8 @@ fn handle_keyboard_input(
                 name: "Fire Blast",
                 mana_points: 10,
                 use_duration: 0.0,
-                action: Action::LoseHealth { points: 5 },
-                secondary_action: None,
+                effect: Effect::LoseHealth { points: 5 },
+                secondary_effect: None,
             },
             target: player_entity,
         });
@@ -74,8 +74,8 @@ fn handle_keyboard_input(
                 name: "Lesser Heal",
                 mana_points: 15,
                 use_duration: 1.5,
-                action: Action::GainHealth { points: 20 },
-                secondary_action: None,
+                effect: Effect::GainHealth { points: 20 },
+                secondary_effect: None,
             },
             target: player_entity,
         });

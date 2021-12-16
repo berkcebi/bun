@@ -1,5 +1,5 @@
 use crate::{
-    action::{Action, TargetAction},
+    effect::{AffectTarget, Effect},
     mana::{Mana, RegenManaCooldown},
 };
 use bevy::prelude::*;
@@ -11,8 +11,8 @@ pub struct Ability {
     pub name: &'static str,
     pub mana_points: u8,
     pub use_duration: f32,
-    pub action: Action,
-    pub secondary_action: Option<Action>,
+    pub effect: Effect,
+    pub secondary_effect: Option<Effect>,
 }
 
 pub struct TryAbility {
@@ -152,7 +152,7 @@ fn cast_ability(
 fn use_ability(
     mut commands: Commands,
     mut use_ability_event_reader: EventReader<UseAbility>,
-    mut target_action_event_writer: EventWriter<TargetAction>,
+    mut affect_target_event_writer: EventWriter<AffectTarget>,
     mut query: Query<&mut Mana>,
 ) {
     for use_ability in use_ability_event_reader.iter() {
@@ -164,15 +164,15 @@ fn use_ability(
             .entity(use_ability.source)
             .insert(RegenManaCooldown::new());
 
-        target_action_event_writer.send(TargetAction {
+        affect_target_event_writer.send(AffectTarget {
             target: use_ability.target,
-            action: use_ability.ability.action,
+            effect: use_ability.ability.effect,
         });
 
-        if let Some(secondary_action) = use_ability.ability.secondary_action {
-            target_action_event_writer.send(TargetAction {
+        if let Some(secondary_effect) = use_ability.ability.secondary_effect {
+            affect_target_event_writer.send(AffectTarget {
                 target: use_ability.target,
-                action: secondary_action,
+                effect: secondary_effect,
             });
         }
 
