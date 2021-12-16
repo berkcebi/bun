@@ -1,4 +1,5 @@
 mod ability;
+mod critical;
 mod effect;
 mod health;
 mod interface;

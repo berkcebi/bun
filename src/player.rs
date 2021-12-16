@@ -1,5 +1,6 @@
 use crate::{
     ability::{Ability, TryAbility},
+    critical::Critical,
     effect::Effect,
     health::Health,
     mana::Mana,
@@ -29,7 +30,8 @@ fn spawn(mut commands: Commands) {
             points: 100,
             max_points: 100,
             regen_points: 1,
-        });
+        })
+        .insert(Critical { percentage: 0.1 });
 }
 
 fn handle_keyboard_input(
