@@ -33,6 +33,16 @@ pub struct CastAbility {
     pub duration_timer: Timer,
 }
 
+impl CastAbility {
+    pub fn new(ability: Ability, target: Entity) -> Self {
+        Self {
+            ability,
+            target,
+            duration_timer: Timer::from_seconds(ability.use_duration, false),
+        }
+    }
+}
+
 struct UseAbilityCooldown {
     duration_timer: Timer,
 }
@@ -105,12 +115,9 @@ fn try_ability(
             .insert(UseAbilityCooldown::default());
 
         if try_ability.ability.use_duration > 0.0 {
-            commands.entity(try_ability.source).insert(CastAbility {
-                ability: try_ability.ability,
-                target: try_ability.target,
-                // FIXME: Add constructor to use ability's use duration.
-                duration_timer: Timer::from_seconds(try_ability.ability.use_duration, false),
-            });
+            commands
+                .entity(try_ability.source)
+                .insert(CastAbility::new(try_ability.ability, try_ability.target));
         } else {
             use_ability_event_writer.send(UseAbility {
                 source: try_ability.source,
