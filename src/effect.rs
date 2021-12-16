@@ -1,10 +1,11 @@
 use crate::health::Health;
 use bevy::prelude::*;
+use rand::prelude::*;
 
 #[derive(Clone, Copy)]
 pub enum Effect {
-    LoseHealth { points: u8 },
-    GainHealth { points: u8 },
+    LoseHealth { min_points: u8, max_points: u8 },
+    GainHealth { min_points: u8, max_points: u8 },
 }
 
 pub struct AffectTarget {
@@ -29,8 +30,12 @@ fn affect_target(
         let target = affect_target.target;
 
         match affect_target.effect {
-            Effect::LoseHealth { points } => {
+            Effect::LoseHealth {
+                min_points,
+                max_points,
+            } => {
                 let mut health = health_query.get_mut(target).unwrap();
+                let points = thread_rng().gen_range(min_points..=max_points);
 
                 if health.points > points {
                     health.points -= points;
@@ -41,8 +46,12 @@ fn affect_target(
                     info!("{:?} died.", target);
                 }
             }
-            Effect::GainHealth { points } => {
+            Effect::GainHealth {
+                min_points,
+                max_points,
+            } => {
                 let mut health = health_query.get_mut(target).unwrap();
+                let points = thread_rng().gen_range(min_points..=max_points);
 
                 health.points = (health.points + points).min(health.max_points);
             }

@@ -22,11 +22,11 @@ fn spawn(mut commands: Commands) {
         .spawn()
         .insert(Player)
         .insert(Health {
-            points: 30,
-            max_points: 40,
+            points: 160,
+            max_points: 200,
         })
         .insert(Mana {
-            points: 50,
+            points: 100,
             max_points: 100,
             regen_points: 1,
         });
@@ -44,9 +44,12 @@ fn handle_keyboard_input(
             source: player_entity,
             ability: Ability {
                 name: "Fireball",
-                mana_points: 25,
+                mana_points: 20,
                 use_duration: 2.5,
-                effect: Effect::LoseHealth { points: 10 },
+                effect: Effect::LoseHealth {
+                    min_points: 30,
+                    max_points: 50,
+                },
                 secondary_effect: None,
             },
             target: player_entity,
@@ -58,9 +61,12 @@ fn handle_keyboard_input(
             source: player_entity,
             ability: Ability {
                 name: "Fire Blast",
-                mana_points: 10,
+                mana_points: 15,
                 use_duration: 0.0,
-                effect: Effect::LoseHealth { points: 5 },
+                effect: Effect::LoseHealth {
+                    min_points: 20,
+                    max_points: 30,
+                },
                 secondary_effect: None,
             },
             target: player_entity,
@@ -74,7 +80,10 @@ fn handle_keyboard_input(
                 name: "Lesser Heal",
                 mana_points: 15,
                 use_duration: 1.5,
-                effect: Effect::GainHealth { points: 20 },
+                effect: Effect::GainHealth {
+                    min_points: 40,
+                    max_points: 60,
+                },
                 secondary_effect: None,
             },
             target: player_entity,
