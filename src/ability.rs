@@ -1,4 +1,7 @@
-use crate::mana::{Mana, RegenManaCooldown};
+use crate::{
+    action::{Action, TargetAction},
+    mana::{Mana, RegenManaCooldown},
+};
 use bevy::prelude::*;
 
 const USE_ABILITY_COOLDOWN_DURATION: f32 = 1.5;
@@ -8,31 +11,33 @@ pub struct Ability {
     pub name: &'static str,
     pub mana_points: u8,
     pub use_duration: f32,
+    pub action: Action,
+    pub secondary_action: Option<Action>,
 }
 
-impl Ability {
-    pub const FIREBALL: Self = Self {
-        name: "Fireball",
-        mana_points: 25,
-        use_duration: 2.5,
-    };
-
-    pub const FIRE_BLAST: Self = Self {
-        name: "Fire Blast",
-        mana_points: 10,
-        use_duration: 0.0,
-    };
-}
-
-pub struct UseAbility {
+pub struct TryAbility {
+    pub source: Entity,
     pub ability: Ability,
+    pub target: Entity,
+}
+
+struct UseAbility {
+    source: Entity,
+    ability: Ability,
+    target: Entity,
+}
+
+pub struct CastAbility {
+    pub ability: Ability,
+    pub target: Entity,
     pub duration_timer: Timer,
 }
 
-impl UseAbility {
-    pub fn new(ability: Ability) -> Self {
+impl CastAbility {
+    pub fn new(ability: Ability, target: Entity) -> Self {
         Self {
             ability,
+            target,
             duration_timer: Timer::from_seconds(ability.use_duration, false),
         }
     }
@@ -54,54 +59,12 @@ pub struct AbilityPlugin;
 
 impl Plugin for AbilityPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system(use_ability.system())
-            .add_system(remove_use_ability_cooldown.system());
-    }
-}
-
-fn use_ability(
-    mut commands: Commands,
-    time: Res<Time>,
-    mut query: Query<(
-        Entity,
-        &mut UseAbility,
-        &mut Mana,
-        Option<&UseAbilityCooldown>,
-    )>,
-) {
-    for (entity, mut use_ability, mut mana, use_ability_cooldown) in query.iter_mut() {
-        let ability = use_ability.ability;
-
-        if use_ability.duration_timer.elapsed_secs() <= 0.0 {
-            if use_ability_cooldown.is_some() {
-                info!("Under global cooldown.");
-
-                commands.entity(entity).remove::<UseAbility>();
-                continue;
-            }
-
-            if ability.mana_points > mana.points {
-                info!("Not enough mana.");
-
-                commands.entity(entity).remove::<UseAbility>();
-                continue;
-            }
-
-            commands
-                .entity(entity)
-                .insert(UseAbilityCooldown::default());
-        }
-
-        use_ability.duration_timer.tick(time.delta());
-
-        if use_ability.duration_timer.finished() {
-            mana.points -= ability.mana_points;
-
-            info!("Casted {}!", ability.name);
-
-            commands.entity(entity).remove::<UseAbility>();
-            commands.entity(entity).insert(RegenManaCooldown::new());
-        }
+        app.add_event::<TryAbility>()
+            .add_event::<UseAbility>()
+            .add_system(remove_use_ability_cooldown.system())
+            .add_system(try_ability.system())
+            .add_system(cast_ability.system())
+            .add_system(use_ability.system());
     }
 }
 
@@ -117,5 +80,102 @@ fn remove_use_ability_cooldown(
             info!("Global cooldown over.");
             commands.entity(entity).remove::<UseAbilityCooldown>();
         }
+    }
+}
+
+fn try_ability(
+    mut commands: Commands,
+    mut try_ability_event_reader: EventReader<TryAbility>,
+    mut use_ability_event_writer: EventWriter<UseAbility>,
+    mut query: Query<(&Mana, Option<&CastAbility>, Option<&UseAbilityCooldown>)>,
+) {
+    for try_ability in try_ability_event_reader.iter() {
+        let (mana, cast_ability, use_ability_cooldown) = query.get_mut(try_ability.source).unwrap();
+
+        if cast_ability.is_some() {
+            info!("Casting another ability.");
+
+            continue;
+        }
+
+        if use_ability_cooldown.is_some() {
+            info!("Under global cooldown.");
+
+            continue;
+        }
+
+        if try_ability.ability.mana_points > mana.points {
+            info!("Not enough mana.");
+
+            continue;
+        }
+
+        commands
+            .entity(try_ability.source)
+            .insert(UseAbilityCooldown::default());
+
+        if try_ability.ability.use_duration > 0.0 {
+            commands
+                .entity(try_ability.source)
+                .insert(CastAbility::new(try_ability.ability, try_ability.target));
+        } else {
+            use_ability_event_writer.send(UseAbility {
+                source: try_ability.source,
+                ability: try_ability.ability,
+                target: try_ability.target,
+            });
+        }
+    }
+}
+
+fn cast_ability(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut use_ability_event_writer: EventWriter<UseAbility>,
+    mut query: Query<(Entity, &mut CastAbility)>,
+) {
+    for (entity, mut cast_ability) in query.iter_mut() {
+        cast_ability.duration_timer.tick(time.delta());
+
+        if cast_ability.duration_timer.finished() {
+            commands.entity(entity).remove::<CastAbility>();
+
+            use_ability_event_writer.send(UseAbility {
+                source: entity,
+                ability: cast_ability.ability,
+                target: cast_ability.target,
+            });
+        }
+    }
+}
+
+fn use_ability(
+    mut commands: Commands,
+    mut use_ability_event_reader: EventReader<UseAbility>,
+    mut target_action_event_writer: EventWriter<TargetAction>,
+    mut query: Query<&mut Mana>,
+) {
+    for use_ability in use_ability_event_reader.iter() {
+        let mut mana = query.get_mut(use_ability.source).unwrap();
+
+        mana.points -= use_ability.ability.mana_points;
+
+        commands
+            .entity(use_ability.source)
+            .insert(RegenManaCooldown::new());
+
+        target_action_event_writer.send(TargetAction {
+            target: use_ability.target,
+            action: use_ability.ability.action,
+        });
+
+        if let Some(secondary_action) = use_ability.ability.secondary_action {
+            target_action_event_writer.send(TargetAction {
+                target: use_ability.target,
+                action: secondary_action,
+            });
+        }
+
+        info!("Casted {}.", use_ability.ability.name);
     }
 }

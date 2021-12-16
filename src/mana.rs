@@ -1,4 +1,4 @@
-use crate::ability::UseAbility;
+use crate::ability::CastAbility;
 use bevy::prelude::*;
 
 const REGEN_MANA_INTERVAL: f64 = 0.5;
@@ -35,7 +35,7 @@ impl Plugin for ManaPlugin {
     }
 }
 
-fn regen_mana(mut query: Query<&mut Mana, (Without<UseAbility>, Without<RegenManaCooldown>)>) {
+fn regen_mana(mut query: Query<&mut Mana, (Without<CastAbility>, Without<RegenManaCooldown>)>) {
     for mut mana in query.iter_mut() {
         if mana.points < mana.max_points {
             mana.points = (mana.points + mana.regen_points).min(mana.max_points);
