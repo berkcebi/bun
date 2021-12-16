@@ -165,14 +165,16 @@ fn use_ability(
             .insert(RegenManaCooldown::new());
 
         affect_target_event_writer.send(AffectTarget {
-            target: use_ability.target,
+            source: use_ability.source,
             effect: use_ability.ability.effect,
+            target: use_ability.target,
         });
 
         if let Some(secondary_effect) = use_ability.ability.secondary_effect {
             affect_target_event_writer.send(AffectTarget {
-                target: use_ability.target,
+                source: use_ability.source,
                 effect: secondary_effect,
+                target: use_ability.target,
             });
         }
 
