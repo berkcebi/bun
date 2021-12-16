@@ -46,7 +46,7 @@ fn affect_target(
 
                 let critical = critical_query.get_mut(affect_target.source).unwrap();
                 if let Some(critical) = critical {
-                    if critical.percentage >= rng.gen() {
+                    if critical.percent >= rng.gen() {
                         points *= CRITICAL_MULTIPLIER;
                     }
                 }
@@ -69,7 +69,7 @@ fn affect_target(
 
                 let critical = critical_query.get_mut(affect_target.source).unwrap();
                 if let Some(critical) = critical {
-                    if critical.percentage >= rng.gen() {
+                    if critical.percent >= rng.gen() {
                         points *= CRITICAL_MULTIPLIER;
                     }
                 }

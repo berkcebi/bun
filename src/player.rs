@@ -31,7 +31,7 @@ fn spawn(mut commands: Commands) {
             max_points: 100,
             regen_points: 1,
         })
-        .insert(Critical { percentage: 0.1 });
+        .insert(Critical { percent: 0.1 });
 }
 
 fn handle_keyboard_input(
