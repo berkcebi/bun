@@ -1,5 +1,5 @@
 use crate::{
-    ability::UseAbility, health::Health, mana::Mana, player::Player, WINDOW_HEIGHT, WINDOW_WIDTH,
+    ability::CastAbility, health::Health, mana::Mana, player::Player, WINDOW_HEIGHT, WINDOW_WIDTH,
 };
 use bevy::{ecs::component::Component, prelude::*};
 
@@ -46,7 +46,7 @@ impl Progressive for Mana {
     }
 }
 
-impl Progressive for UseAbility {
+impl Progressive for CastAbility {
     fn get_progress(&self) -> f32 {
         self.duration_timer.percent()
     }
@@ -69,8 +69,8 @@ impl Plugin for InterfacePlugin {
             .add_system(update_bar_indicator::<Health, HealthBar>.system())
             .add_system(update_bar_text::<Mana, ManaBar>.system())
             .add_system(update_bar_indicator::<Mana, ManaBar>.system())
-            .add_system(update_bar_text::<UseAbility, CastBar>.system())
-            .add_system(update_bar_indicator::<UseAbility, CastBar>.system())
+            .add_system(update_bar_text::<CastAbility, CastBar>.system())
+            .add_system(update_bar_indicator::<CastAbility, CastBar>.system())
             .add_system(update_cast_bar_visible.system());
     }
 }
@@ -120,7 +120,7 @@ fn setup(
         BAR_WIDTH_LARGE,
         CastBar,
         &mut commands,
-        bar_text_font.clone(),
+        bar_text_font,
         &mut color_materials,
     );
 }
@@ -175,12 +175,12 @@ fn update_bar_indicator<T: Progressive, U: Component>(
 fn update_cast_bar_visible(
     mut bar_query: Query<(&Children, &mut Visible), With<CastBar>>,
     mut bar_children_visible_query: Query<&mut Visible, Without<CastBar>>,
-    use_ability_query: Query<&UseAbility, With<Player>>,
+    cast_ability_query: Query<&CastAbility, With<Player>>,
 ) {
-    let is_visible = match use_ability_query.single() {
-        Ok(use_ability) => {
-            use_ability.duration_timer.elapsed_secs() > 0.0
-                && !use_ability.duration_timer.finished()
+    let is_visible = match cast_ability_query.single() {
+        Ok(cast_ability) => {
+            cast_ability.duration_timer.elapsed_secs() > 0.0
+                && !cast_ability.duration_timer.finished()
         }
         Err(_) => false,
     };
@@ -208,7 +208,7 @@ fn spawn_bar<T: Component>(
     bar_text_font_handle: Handle<Font>,
     color_materials: &mut ResMut<Assets<ColorMaterial>>,
 ) {
-    let mut bar_background_color = color.clone();
+    let mut bar_background_color = color;
     bar_background_color.set_a(BAR_BACKGROUND_COLOR_ALPHA);
 
     commands
@@ -237,7 +237,7 @@ fn spawn_bar<T: Component>(
             };
 
             parent.spawn_bundle(Text2dBundle {
-                text: Text::with_section("", text_style.clone(), text_alignment),
+                text: Text::with_section("", text_style, text_alignment),
                 transform: Transform::from_translation(Vec3::new(
                     0.0,
                     BAR_TEXT_VERTICAL_OFFSET,

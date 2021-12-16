@@ -1,5 +1,6 @@
 use crate::{
-    ability::{Ability, UseAbility},
+    ability::{Ability, TryAbility},
+    action::Action,
     health::Health,
     mana::Mana,
 };
@@ -32,27 +33,51 @@ fn spawn(mut commands: Commands) {
 }
 
 fn handle_keyboard_input(
-    mut commands: Commands,
     keyboard_input: Res<Input<KeyCode>>,
+    mut try_ability_event_writer: EventWriter<TryAbility>,
     player_query: Query<Entity, With<Player>>,
 ) {
     let player_entity = player_query.single().unwrap();
 
     if keyboard_input.just_pressed(KeyCode::Key1) {
-        commands
-            .entity(player_entity)
-            .insert(UseAbility::new(Ability::FIREBALL, player_entity));
+        try_ability_event_writer.send(TryAbility {
+            source: player_entity,
+            ability: Ability {
+                name: "Fireball",
+                mana_points: 25,
+                use_duration: 2.5,
+                action: Action::LoseHealth { points: 10 },
+                secondary_action: None,
+            },
+            target: player_entity,
+        });
     }
 
     if keyboard_input.just_pressed(KeyCode::Key2) {
-        commands
-            .entity(player_entity)
-            .insert(UseAbility::new(Ability::FIRE_BLAST, player_entity));
+        try_ability_event_writer.send(TryAbility {
+            source: player_entity,
+            ability: Ability {
+                name: "Fire Blast",
+                mana_points: 10,
+                use_duration: 0.0,
+                action: Action::LoseHealth { points: 5 },
+                secondary_action: None,
+            },
+            target: player_entity,
+        });
     }
 
     if keyboard_input.just_pressed(KeyCode::Key3) {
-        commands
-            .entity(player_entity)
-            .insert(UseAbility::new(Ability::LESSER_HEAL, player_entity));
+        try_ability_event_writer.send(TryAbility {
+            source: player_entity,
+            ability: Ability {
+                name: "Lesser Heal",
+                mana_points: 15,
+                use_duration: 1.5,
+                action: Action::GainHealth { points: 20 },
+                secondary_action: None,
+            },
+            target: player_entity,
+        });
     }
 }

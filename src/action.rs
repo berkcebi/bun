@@ -33,7 +33,7 @@ fn perform_target_action(
                 let mut health = health_query.get_mut(target).unwrap();
 
                 if health.points > points {
-                    health.points = health.points - points;
+                    health.points -= points;
                 } else {
                     // TODO: Remove from game.
                     health.points = 0;
