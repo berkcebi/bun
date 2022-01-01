@@ -1,7 +1,7 @@
 use crate::{
     ability::{Ability, TryAbility},
     critical::Critical,
-    effect::Effect,
+    effect::{Effect, MomentaryEffect, PeriodicMomentaryEffects},
     health::Health,
     mana::Mana,
 };
@@ -31,7 +31,8 @@ fn spawn(mut commands: Commands) {
             max_points: 100,
             regen_points: 1,
         })
-        .insert(Critical { percent: 0.1 });
+        .insert(Critical { percent: 0.1 })
+        .insert(PeriodicMomentaryEffects::new());
 }
 
 fn handle_keyboard_input(
@@ -48,11 +49,20 @@ fn handle_keyboard_input(
                 name: "Fireball",
                 mana_points: 20,
                 use_duration: 2.5,
-                effect: Effect::LoseHealth {
-                    min_points: 30,
-                    max_points: 50,
+                effect: Effect::Momentary {
+                    momentary_effect: MomentaryEffect::LoseHealth {
+                        min_points: 30,
+                        max_points: 50,
+                    },
                 },
-                secondary_effect: None,
+                secondary_effect: Some(Effect::PeriodicMomentary {
+                    momentary_effect: MomentaryEffect::LoseHealth {
+                        min_points: 2,
+                        max_points: 3,
+                    },
+                    interval: 3.0,
+                    duration: 12.0,
+                }),
             },
             target: player_entity,
         });
@@ -65,9 +75,11 @@ fn handle_keyboard_input(
                 name: "Fire Blast",
                 mana_points: 15,
                 use_duration: 0.0,
-                effect: Effect::LoseHealth {
-                    min_points: 20,
-                    max_points: 30,
+                effect: Effect::Momentary {
+                    momentary_effect: MomentaryEffect::LoseHealth {
+                        min_points: 20,
+                        max_points: 30,
+                    },
                 },
                 secondary_effect: None,
             },
@@ -82,9 +94,11 @@ fn handle_keyboard_input(
                 name: "Lesser Heal",
                 mana_points: 15,
                 use_duration: 1.5,
-                effect: Effect::GainHealth {
-                    min_points: 40,
-                    max_points: 60,
+                effect: Effect::Momentary {
+                    momentary_effect: MomentaryEffect::GainHealth {
+                        min_points: 40,
+                        max_points: 60,
+                    },
                 },
                 secondary_effect: None,
             },
