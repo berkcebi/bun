@@ -1,7 +1,7 @@
 use crate::{
     ability::{Ability, TryAbility},
     critical::Critical,
-    effect::{Effect, MomentaryEffect, PeriodicMomentaryEffects},
+    effect::{Effect, LastingEffect, LastingEffects, MomentaryEffect, PeriodicMomentaryEffects},
     health::Health,
     mana::Mana,
 };
@@ -32,7 +32,8 @@ fn spawn(mut commands: Commands) {
             regen_points: 1,
         })
         .insert(Critical { percent: 0.1 })
-        .insert(PeriodicMomentaryEffects::new());
+        .insert(PeriodicMomentaryEffects::new())
+        .insert(LastingEffects::new());
 }
 
 fn handle_keyboard_input(
@@ -99,6 +100,23 @@ fn handle_keyboard_input(
                         min_points: 40,
                         max_points: 60,
                     },
+                },
+                secondary_effect: None,
+            },
+            target: player_entity,
+        });
+    }
+
+    if keyboard_input.just_pressed(KeyCode::Q) {
+        try_ability_event_writer.send(TryAbility {
+            source: player_entity,
+            ability: Ability {
+                name: "Silence",
+                mana_points: 20,
+                cast_duration: 0.0,
+                effect: Effect::Lasting {
+                    lasting_effect: LastingEffect::Silence,
+                    duration: 4.0,
                 },
                 secondary_effect: None,
             },

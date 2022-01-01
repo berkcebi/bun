@@ -15,13 +15,21 @@ pub enum Effect {
         interval: f32,
         duration: f32,
     },
-    // TODO: Add lasting effect.
+    Lasting {
+        lasting_effect: LastingEffect,
+        duration: f32,
+    },
 }
 
 #[derive(Clone, Copy)]
 pub enum MomentaryEffect {
     LoseHealth { min_points: u8, max_points: u8 },
     GainHealth { min_points: u8, max_points: u8 },
+}
+
+#[derive(Clone, Copy, PartialEq)]
+pub enum LastingEffect {
+    Silence,
 }
 
 pub struct PerformEffect {
@@ -40,6 +48,12 @@ pub struct PeriodicMomentaryEffects {
     instances: Vec<PeriodicMomentaryEffectInstance>,
 }
 
+impl PeriodicMomentaryEffects {
+    pub fn new() -> Self {
+        Self { instances: vec![] }
+    }
+}
+
 struct PeriodicMomentaryEffectInstance {
     momentary_effect: MomentaryEffect,
     interval_timer: Timer,
@@ -47,10 +61,20 @@ struct PeriodicMomentaryEffectInstance {
     source: Entity,
 }
 
-impl PeriodicMomentaryEffects {
+pub struct LastingEffects {
+    pub instances: Vec<LastingEffectInstance>,
+}
+
+impl LastingEffects {
     pub fn new() -> Self {
         Self { instances: vec![] }
     }
+}
+
+pub struct LastingEffectInstance {
+    pub lasting_effect: LastingEffect,
+    pub duration_timer: Timer,
+    pub source: Entity,
 }
 
 pub struct EffectPlugin;
@@ -61,14 +85,16 @@ impl Plugin for EffectPlugin {
             .add_event::<PerformMomentaryEffect>()
             .add_system(perform_effect.system())
             .add_system(perform_momentary_effect.system())
-            .add_system(tick_periodic_momentary_effects.system());
+            .add_system(tick_periodic_momentary_effects.system())
+            .add_system(tick_lasting_effects.system());
     }
 }
 
 fn perform_effect(
     mut perform_effect_event_reader: EventReader<PerformEffect>,
     mut perform_momentary_effect_event_writer: EventWriter<PerformMomentaryEffect>,
-    mut query: Query<&mut PeriodicMomentaryEffects>,
+    mut periodic_momentary_effects_query: Query<&mut PeriodicMomentaryEffects>,
+    mut lasting_effects_query: Query<&mut LastingEffects>,
 ) {
     for perform_effect in perform_effect_event_reader.iter() {
         match perform_effect.effect {
@@ -84,7 +110,9 @@ fn perform_effect(
                 interval,
                 duration,
             } => {
-                let mut periodic_momentary_effects = query.get_mut(perform_effect.target).unwrap();
+                let mut periodic_momentary_effects = periodic_momentary_effects_query
+                    .get_mut(perform_effect.target)
+                    .unwrap();
                 periodic_momentary_effects
                     .instances
                     .push(PeriodicMomentaryEffectInstance {
@@ -93,6 +121,19 @@ fn perform_effect(
                         duration_timer: Timer::from_seconds(duration, false),
                         source: perform_effect.source,
                     })
+            }
+            Effect::Lasting {
+                lasting_effect,
+                duration,
+            } => {
+                let mut lasting_effects = lasting_effects_query
+                    .get_mut(perform_effect.target)
+                    .unwrap();
+                lasting_effects.instances.push(LastingEffectInstance {
+                    lasting_effect,
+                    duration_timer: Timer::from_seconds(duration, false),
+                    source: perform_effect.source,
+                })
             }
         }
     }
@@ -173,6 +214,17 @@ fn tick_periodic_momentary_effects(
                 });
             }
 
+            instance.duration_timer.tick(time.delta());
+        }
+
+        instances.retain(|instance| !instance.duration_timer.finished());
+    }
+}
+
+fn tick_lasting_effects(time: Res<Time>, mut query: Query<&mut LastingEffects>) {
+    for mut lasting_effects in query.iter_mut() {
+        let instances = &mut lasting_effects.instances;
+        for instance in instances.iter_mut() {
             instance.duration_timer.tick(time.delta());
         }
 
