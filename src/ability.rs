@@ -1,5 +1,5 @@
 use crate::{
-    effect::{Effect, PerformEffect},
+    effect::{Effect, LastingEffect, LastingEffects, PerformEffect},
     mana::{Mana, RegenManaCooldown},
 };
 use bevy::prelude::*;
@@ -87,13 +87,29 @@ fn try_ability(
     mut commands: Commands,
     mut try_ability_event_reader: EventReader<TryAbility>,
     mut perform_ability_event_writer: EventWriter<PerformAbility>,
-    mut query: Query<(&Mana, Option<&CastAbility>, Option<&AbilityCooldown>)>,
+    mut query: Query<(
+        &Mana,
+        &LastingEffects,
+        Option<&CastAbility>,
+        Option<&AbilityCooldown>,
+    )>,
 ) {
     for try_ability in try_ability_event_reader.iter() {
-        let (mana, cast_ability, ability_cooldown) = query.get_mut(try_ability.source).unwrap();
+        let (mana, lasting_effects, cast_ability, ability_cooldown) =
+            query.get_mut(try_ability.source).unwrap();
 
         if cast_ability.is_some() {
             info!("Casting another ability.");
+
+            continue;
+        }
+
+        if lasting_effects
+            .instances
+            .iter()
+            .any(|instance| instance.lasting_effect == LastingEffect::Silence)
+        {
+            info!("Silenced.");
 
             continue;
         }
