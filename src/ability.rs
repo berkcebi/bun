@@ -4,13 +4,13 @@ use crate::{
 };
 use bevy::prelude::*;
 
-const USE_ABILITY_COOLDOWN_DURATION: f32 = 1.5;
+const ABILITY_COOLDOWN_DURATION: f32 = 1.5;
 
 #[derive(Clone, Copy)]
 pub struct Ability {
     pub name: &'static str,
     pub mana_points: u8,
-    pub use_duration: f32,
+    pub cast_duration: f32,
     pub effect: Effect,
     pub secondary_effect: Option<Effect>,
 }
@@ -21,8 +21,7 @@ pub struct TryAbility {
     pub target: Entity,
 }
 
-// TODO: Rename to `PerformAbility`.
-struct UseAbility {
+struct PerformAbility {
     source: Entity,
     ability: Ability,
     target: Entity,
@@ -39,19 +38,19 @@ impl CastAbility {
         Self {
             ability,
             target,
-            duration_timer: Timer::from_seconds(ability.use_duration, false),
+            duration_timer: Timer::from_seconds(ability.cast_duration, false),
         }
     }
 }
 
-struct UseAbilityCooldown {
+struct AbilityCooldown {
     duration_timer: Timer,
 }
 
-impl Default for UseAbilityCooldown {
+impl Default for AbilityCooldown {
     fn default() -> Self {
         Self {
-            duration_timer: Timer::from_seconds(USE_ABILITY_COOLDOWN_DURATION, false),
+            duration_timer: Timer::from_seconds(ABILITY_COOLDOWN_DURATION, false),
         }
     }
 }
@@ -61,25 +60,25 @@ pub struct AbilityPlugin;
 impl Plugin for AbilityPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_event::<TryAbility>()
-            .add_event::<UseAbility>()
-            .add_system(remove_use_ability_cooldown.system())
+            .add_event::<PerformAbility>()
+            .add_system(remove_ability_cooldown.system())
             .add_system(try_ability.system())
             .add_system(cast_ability.system())
-            .add_system(use_ability.system());
+            .add_system(perform_ability.system());
     }
 }
 
-fn remove_use_ability_cooldown(
+fn remove_ability_cooldown(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(Entity, &mut UseAbilityCooldown)>,
+    mut query: Query<(Entity, &mut AbilityCooldown)>,
 ) {
-    for (entity, mut use_ability_cooldown) in query.iter_mut() {
-        use_ability_cooldown.duration_timer.tick(time.delta());
+    for (entity, mut ability_cooldown) in query.iter_mut() {
+        ability_cooldown.duration_timer.tick(time.delta());
 
-        if use_ability_cooldown.duration_timer.finished() {
+        if ability_cooldown.duration_timer.finished() {
             info!("Global cooldown over.");
-            commands.entity(entity).remove::<UseAbilityCooldown>();
+            commands.entity(entity).remove::<AbilityCooldown>();
         }
     }
 }
@@ -87,11 +86,11 @@ fn remove_use_ability_cooldown(
 fn try_ability(
     mut commands: Commands,
     mut try_ability_event_reader: EventReader<TryAbility>,
-    mut use_ability_event_writer: EventWriter<UseAbility>,
-    mut query: Query<(&Mana, Option<&CastAbility>, Option<&UseAbilityCooldown>)>,
+    mut perform_ability_event_writer: EventWriter<PerformAbility>,
+    mut query: Query<(&Mana, Option<&CastAbility>, Option<&AbilityCooldown>)>,
 ) {
     for try_ability in try_ability_event_reader.iter() {
-        let (mana, cast_ability, use_ability_cooldown) = query.get_mut(try_ability.source).unwrap();
+        let (mana, cast_ability, ability_cooldown) = query.get_mut(try_ability.source).unwrap();
 
         if cast_ability.is_some() {
             info!("Casting another ability.");
@@ -99,7 +98,7 @@ fn try_ability(
             continue;
         }
 
-        if use_ability_cooldown.is_some() {
+        if ability_cooldown.is_some() {
             info!("Under global cooldown.");
 
             continue;
@@ -113,14 +112,14 @@ fn try_ability(
 
         commands
             .entity(try_ability.source)
-            .insert(UseAbilityCooldown::default());
+            .insert(AbilityCooldown::default());
 
-        if try_ability.ability.use_duration > 0.0 {
+        if try_ability.ability.cast_duration > 0.0 {
             commands
                 .entity(try_ability.source)
                 .insert(CastAbility::new(try_ability.ability, try_ability.target));
         } else {
-            use_ability_event_writer.send(UseAbility {
+            perform_ability_event_writer.send(PerformAbility {
                 source: try_ability.source,
                 ability: try_ability.ability,
                 target: try_ability.target,
@@ -132,7 +131,7 @@ fn try_ability(
 fn cast_ability(
     mut commands: Commands,
     time: Res<Time>,
-    mut use_ability_event_writer: EventWriter<UseAbility>,
+    mut perform_ability_event_writer: EventWriter<PerformAbility>,
     mut query: Query<(Entity, &mut CastAbility)>,
 ) {
     for (entity, mut cast_ability) in query.iter_mut() {
@@ -141,7 +140,7 @@ fn cast_ability(
         if cast_ability.duration_timer.finished() {
             commands.entity(entity).remove::<CastAbility>();
 
-            use_ability_event_writer.send(UseAbility {
+            perform_ability_event_writer.send(PerformAbility {
                 source: entity,
                 ability: cast_ability.ability,
                 target: cast_ability.target,
@@ -150,34 +149,34 @@ fn cast_ability(
     }
 }
 
-fn use_ability(
+fn perform_ability(
     mut commands: Commands,
-    mut use_ability_event_reader: EventReader<UseAbility>,
+    mut perform_ability_event_reader: EventReader<PerformAbility>,
     mut perform_effect_event_writer: EventWriter<PerformEffect>,
     mut query: Query<&mut Mana>,
 ) {
-    for use_ability in use_ability_event_reader.iter() {
-        let mut mana = query.get_mut(use_ability.source).unwrap();
+    for perform_ability in perform_ability_event_reader.iter() {
+        let mut mana = query.get_mut(perform_ability.source).unwrap();
 
-        mana.points -= use_ability.ability.mana_points;
+        mana.points -= perform_ability.ability.mana_points;
 
         commands
-            .entity(use_ability.source)
+            .entity(perform_ability.source)
             .insert(RegenManaCooldown::new());
 
-        let mut effects = vec![use_ability.ability.effect];
-        if let Some(secondary_effect) = use_ability.ability.secondary_effect {
+        let mut effects = vec![perform_ability.ability.effect];
+        if let Some(secondary_effect) = perform_ability.ability.secondary_effect {
             effects.push(secondary_effect);
         }
 
         for effect in effects.iter() {
             perform_effect_event_writer.send(PerformEffect {
-                source: use_ability.source,
+                source: perform_ability.source,
                 effect: *effect,
-                target: use_ability.target,
+                target: perform_ability.target,
             });
         }
 
-        info!("Casted {}.", use_ability.ability.name);
+        info!("Casted {}.", perform_ability.ability.name);
     }
 }

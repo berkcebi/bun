@@ -48,7 +48,7 @@ fn handle_keyboard_input(
             ability: Ability {
                 name: "Fireball",
                 mana_points: 20,
-                use_duration: 2.5,
+                cast_duration: 2.5,
                 effect: Effect::Momentary {
                     momentary_effect: MomentaryEffect::LoseHealth {
                         min_points: 30,
@@ -74,7 +74,7 @@ fn handle_keyboard_input(
             ability: Ability {
                 name: "Fire Blast",
                 mana_points: 15,
-                use_duration: 0.0,
+                cast_duration: 0.0,
                 effect: Effect::Momentary {
                     momentary_effect: MomentaryEffect::LoseHealth {
                         min_points: 20,
@@ -93,7 +93,7 @@ fn handle_keyboard_input(
             ability: Ability {
                 name: "Lesser Heal",
                 mana_points: 15,
-                use_duration: 1.5,
+                cast_duration: 1.5,
                 effect: Effect::Momentary {
                     momentary_effect: MomentaryEffect::GainHealth {
                         min_points: 40,
