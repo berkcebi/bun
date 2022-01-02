@@ -2,6 +2,7 @@ use crate::{
     ability::{Ability, TryAbility},
     creature::CreatureBundle,
     effect::{Effect, LastingEffect, MomentaryEffect, MomentaryEffectSchedule},
+    sprite::Sprite,
 };
 use bevy::prelude::*;
 
@@ -16,9 +17,14 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-fn spawn(mut commands: Commands) {
+fn spawn(mut commands: Commands, texture_atlases: Res<Assets<TextureAtlas>>) {
     commands
         .spawn_bundle(CreatureBundle::new(200, 100))
+        .insert_bundle(SpriteSheetBundle {
+            texture_atlas: texture_atlases.get_handle(Sprite::SHEET_PATH),
+            sprite: TextureAtlasSprite::new(Sprite::Player.index()),
+            ..Default::default()
+        })
         .insert(Player);
 }
 
