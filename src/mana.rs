@@ -1,6 +1,7 @@
 use crate::ability::CastAbility;
 use bevy::prelude::*;
 
+const REGEN_MANA_POINTS: u8 = 1;
 const REGEN_MANA_INTERVAL: f64 = 0.5;
 const REGEN_MANA_COOLDOWN_DURATION: f32 = 5.0;
 
@@ -8,6 +9,16 @@ pub struct Mana {
     pub points: u8,
     pub max_points: u8,
     pub regen_points: u8,
+}
+
+impl Mana {
+    pub fn new(points: u8) -> Self {
+        Self {
+            points,
+            max_points: points,
+            regen_points: REGEN_MANA_POINTS,
+        }
+    }
 }
 
 /// Component to disable mana regeneration for a defined duration.

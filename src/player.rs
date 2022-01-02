@@ -1,12 +1,7 @@
 use crate::{
     ability::{Ability, TryAbility},
-    critical::Critical,
-    effect::{
-        Effect, LastingEffect, LastingEffects, MomentaryEffect, MomentaryEffectSchedule,
-        PeriodicMomentaryEffects,
-    },
-    health::Health,
-    mana::Mana,
+    creature::CreatureBundle,
+    effect::{Effect, LastingEffect, MomentaryEffect, MomentaryEffectSchedule},
 };
 use bevy::prelude::*;
 
@@ -23,20 +18,8 @@ impl Plugin for PlayerPlugin {
 
 fn spawn(mut commands: Commands) {
     commands
-        .spawn()
-        .insert(Player)
-        .insert(Health {
-            points: 160,
-            max_points: 200,
-        })
-        .insert(Mana {
-            points: 100,
-            max_points: 100,
-            regen_points: 1,
-        })
-        .insert(Critical { percent: 0.1 })
-        .insert(PeriodicMomentaryEffects::default())
-        .insert(LastingEffects::default());
+        .spawn_bundle(CreatureBundle::new(200, 100))
+        .insert(Player);
 }
 
 fn handle_keyboard_input(
