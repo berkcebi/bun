@@ -10,6 +10,7 @@ pub struct Mana {
     pub regen_points: u8,
 }
 
+/// Component to disable mana regeneration for a defined duration.
 pub struct RegenManaCooldown {
     duration_timer: Timer,
 }

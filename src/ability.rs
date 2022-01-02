@@ -15,18 +15,21 @@ pub struct Ability {
     pub secondary_effect: Option<Effect>,
 }
 
+/// Event to initiate an ability, if possible.
 pub struct TryAbility {
     pub source: Entity,
     pub ability: Ability,
     pub target: Entity,
 }
 
+/// Internal event to perform an ability via a try ability event.
 struct PerformAbility {
     source: Entity,
     ability: Ability,
     target: Entity,
 }
 
+/// Component to store cast duration for an ability.
 pub struct CastAbility {
     pub ability: Ability,
     pub target: Entity,
@@ -43,6 +46,7 @@ impl CastAbility {
     }
 }
 
+/// Component to disable casting for a defined duration, i.e. global cooldown.
 struct AbilityCooldown {
     duration_timer: Timer,
 }

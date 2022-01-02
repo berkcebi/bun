@@ -28,26 +28,24 @@ pub enum LastingEffect {
     Silence,
 }
 
+/// Event to perform an effect, usually when an ability is cast.
 pub struct PerformEffect {
     pub effect: Effect,
     pub source: Entity,
     pub target: Entity,
 }
 
+/// Internal event to perform a momentary effect via a perform effect event.
 struct PerformMomentaryEffect {
     pub effect: MomentaryEffect,
     pub source: Entity,
     pub target: Entity,
 }
 
+/// Component to store ongoing periodic momentary effects.
+#[derive(Default)]
 pub struct PeriodicMomentaryEffects {
     instances: Vec<PeriodicMomentaryEffectInstance>,
-}
-
-impl PeriodicMomentaryEffects {
-    pub fn new() -> Self {
-        Self { instances: vec![] }
-    }
 }
 
 struct PeriodicMomentaryEffectInstance {
@@ -57,14 +55,10 @@ struct PeriodicMomentaryEffectInstance {
     source: Entity,
 }
 
+/// Component to store ongoing lasting effects.
+#[derive(Default)]
 pub struct LastingEffects {
     pub instances: Vec<LastingEffectInstance>,
-}
-
-impl LastingEffects {
-    pub fn new() -> Self {
-        Self { instances: vec![] }
-    }
 }
 
 pub struct LastingEffectInstance {

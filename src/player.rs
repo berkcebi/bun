@@ -35,8 +35,8 @@ fn spawn(mut commands: Commands) {
             regen_points: 1,
         })
         .insert(Critical { percent: 0.1 })
-        .insert(PeriodicMomentaryEffects::new())
-        .insert(LastingEffects::new());
+        .insert(PeriodicMomentaryEffects::default())
+        .insert(LastingEffects::default());
 }
 
 fn handle_keyboard_input(
