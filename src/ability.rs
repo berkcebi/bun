@@ -107,7 +107,7 @@ fn try_ability(
         if lasting_effects
             .instances
             .iter()
-            .any(|instance| instance.lasting_effect == LastingEffect::Silence)
+            .any(|instance| instance.effect == LastingEffect::Silence)
         {
             info!("Silenced.");
 

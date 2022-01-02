@@ -7,24 +7,20 @@ use rand::prelude::*;
 
 #[derive(Clone, Copy)]
 pub enum Effect {
-    Momentary {
-        momentary_effect: MomentaryEffect,
-    },
-    PeriodicMomentary {
-        momentary_effect: MomentaryEffect,
-        interval: f32,
-        duration: f32,
-    },
-    Lasting {
-        lasting_effect: LastingEffect,
-        duration: f32,
-    },
+    Momentary(MomentaryEffect, MomentaryEffectSchedule),
+    Lasting(LastingEffect, f32),
 }
 
 #[derive(Clone, Copy)]
 pub enum MomentaryEffect {
-    LoseHealth { min_points: u8, max_points: u8 },
-    GainHealth { min_points: u8, max_points: u8 },
+    LoseHealth(u8, u8),
+    GainHealth(u8, u8),
+}
+
+#[derive(Clone, Copy)]
+pub enum MomentaryEffectSchedule {
+    Once,
+    Periodic(f32, f32),
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -39,7 +35,7 @@ pub struct PerformEffect {
 }
 
 struct PerformMomentaryEffect {
-    pub momentary_effect: MomentaryEffect,
+    pub effect: MomentaryEffect,
     pub source: Entity,
     pub target: Entity,
 }
@@ -55,7 +51,7 @@ impl PeriodicMomentaryEffects {
 }
 
 struct PeriodicMomentaryEffectInstance {
-    momentary_effect: MomentaryEffect,
+    effect: MomentaryEffect,
     interval_timer: Timer,
     duration_timer: Timer,
     source: Entity,
@@ -72,7 +68,7 @@ impl LastingEffects {
 }
 
 pub struct LastingEffectInstance {
-    pub lasting_effect: LastingEffect,
+    pub effect: LastingEffect,
     pub duration_timer: Timer,
     pub source: Entity,
 }
@@ -98,39 +94,32 @@ fn perform_effect(
 ) {
     for perform_effect in perform_effect_event_reader.iter() {
         match perform_effect.effect {
-            Effect::Momentary { momentary_effect } => {
+            Effect::Momentary(effect, MomentaryEffectSchedule::Once) => {
                 perform_momentary_effect_event_writer.send(PerformMomentaryEffect {
-                    momentary_effect,
+                    effect,
                     source: perform_effect.source,
                     target: perform_effect.target,
                 })
             }
-            Effect::PeriodicMomentary {
-                momentary_effect,
-                interval,
-                duration,
-            } => {
+            Effect::Momentary(effect, MomentaryEffectSchedule::Periodic(interval, duration)) => {
                 let mut periodic_momentary_effects = periodic_momentary_effects_query
                     .get_mut(perform_effect.target)
                     .unwrap();
                 periodic_momentary_effects
                     .instances
                     .push(PeriodicMomentaryEffectInstance {
-                        momentary_effect,
+                        effect,
                         interval_timer: Timer::from_seconds(interval, true),
                         duration_timer: Timer::from_seconds(duration, false),
                         source: perform_effect.source,
                     })
             }
-            Effect::Lasting {
-                lasting_effect,
-                duration,
-            } => {
+            Effect::Lasting(effect, duration) => {
                 let mut lasting_effects = lasting_effects_query
                     .get_mut(perform_effect.target)
                     .unwrap();
                 lasting_effects.instances.push(LastingEffectInstance {
-                    lasting_effect,
+                    effect,
                     duration_timer: Timer::from_seconds(duration, false),
                     source: perform_effect.source,
                 })
@@ -149,11 +138,8 @@ fn perform_momentary_effect(
     for perform_momentary_effect in perform_momentary_effect_event_reader.iter() {
         let target = perform_momentary_effect.target;
 
-        match perform_momentary_effect.momentary_effect {
-            MomentaryEffect::LoseHealth {
-                min_points,
-                max_points,
-            } => {
+        match perform_momentary_effect.effect {
+            MomentaryEffect::LoseHealth(min_points, max_points) => {
                 let mut health = health_query.get_mut(target).unwrap();
                 let mut points = rng.gen_range(min_points..=max_points);
 
@@ -175,10 +161,7 @@ fn perform_momentary_effect(
                     info!("{:?} died.", target);
                 }
             }
-            MomentaryEffect::GainHealth {
-                min_points,
-                max_points,
-            } => {
+            MomentaryEffect::GainHealth(min_points, max_points) => {
                 let mut health = health_query.get_mut(target).unwrap();
                 let mut points = rng.gen_range(min_points..=max_points);
 
@@ -208,7 +191,7 @@ fn tick_periodic_momentary_effects(
             instance.interval_timer.tick(time.delta());
             if instance.interval_timer.finished() {
                 perform_momentary_effect_event_writer.send(PerformMomentaryEffect {
-                    momentary_effect: instance.momentary_effect,
+                    effect: instance.effect,
                     source: instance.source,
                     target: entity,
                 });

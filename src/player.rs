@@ -1,7 +1,10 @@
 use crate::{
     ability::{Ability, TryAbility},
     critical::Critical,
-    effect::{Effect, LastingEffect, LastingEffects, MomentaryEffect, PeriodicMomentaryEffects},
+    effect::{
+        Effect, LastingEffect, LastingEffects, MomentaryEffect, MomentaryEffectSchedule,
+        PeriodicMomentaryEffects,
+    },
     health::Health,
     mana::Mana,
 };
@@ -50,20 +53,14 @@ fn handle_keyboard_input(
                 name: "Fireball",
                 mana_points: 20,
                 cast_duration: 2.5,
-                effect: Effect::Momentary {
-                    momentary_effect: MomentaryEffect::LoseHealth {
-                        min_points: 30,
-                        max_points: 50,
-                    },
-                },
-                secondary_effect: Some(Effect::PeriodicMomentary {
-                    momentary_effect: MomentaryEffect::LoseHealth {
-                        min_points: 2,
-                        max_points: 3,
-                    },
-                    interval: 3.0,
-                    duration: 12.0,
-                }),
+                effect: Effect::Momentary(
+                    MomentaryEffect::LoseHealth(30, 50),
+                    MomentaryEffectSchedule::Once,
+                ),
+                secondary_effect: Some(Effect::Momentary(
+                    MomentaryEffect::LoseHealth(2, 3),
+                    MomentaryEffectSchedule::Periodic(3.0, 12.0),
+                )),
             },
             target: player_entity,
         });
@@ -76,12 +73,10 @@ fn handle_keyboard_input(
                 name: "Fire Blast",
                 mana_points: 15,
                 cast_duration: 0.0,
-                effect: Effect::Momentary {
-                    momentary_effect: MomentaryEffect::LoseHealth {
-                        min_points: 20,
-                        max_points: 30,
-                    },
-                },
+                effect: Effect::Momentary(
+                    MomentaryEffect::LoseHealth(20, 30),
+                    MomentaryEffectSchedule::Once,
+                ),
                 secondary_effect: None,
             },
             target: player_entity,
@@ -95,12 +90,10 @@ fn handle_keyboard_input(
                 name: "Lesser Heal",
                 mana_points: 15,
                 cast_duration: 1.5,
-                effect: Effect::Momentary {
-                    momentary_effect: MomentaryEffect::GainHealth {
-                        min_points: 40,
-                        max_points: 60,
-                    },
-                },
+                effect: Effect::Momentary(
+                    MomentaryEffect::GainHealth(40, 60),
+                    MomentaryEffectSchedule::Once,
+                ),
                 secondary_effect: None,
             },
             target: player_entity,
@@ -114,10 +107,7 @@ fn handle_keyboard_input(
                 name: "Silence",
                 mana_points: 20,
                 cast_duration: 0.0,
-                effect: Effect::Lasting {
-                    lasting_effect: LastingEffect::Silence,
-                    duration: 4.0,
-                },
+                effect: Effect::Lasting(LastingEffect::Silence, 4.0),
                 secondary_effect: None,
             },
             target: player_entity,
