@@ -1,9 +1,8 @@
 use crate::{
-    ability::CastAbility, health::Health, mana::Mana, player::Player, WINDOW_HEIGHT, WINDOW_WIDTH,
+    ability::CastAbility, health::Health, mana::Mana, player::Player, CAMERA_SCALE, WINDOW_HEIGHT,
+    WINDOW_WIDTH,
 };
 use bevy::{ecs::component::Component, prelude::*};
-
-const CAMERA_SCALE: f32 = 1.0 / 2.0;
 
 const WIDTH: f32 = WINDOW_WIDTH * CAMERA_SCALE;
 const HEIGHT: f32 = WINDOW_HEIGHT * CAMERA_SCALE;
@@ -81,10 +80,6 @@ fn setup(
     mut color_materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let bar_text_font = asset_server.load(BAR_TEXT_FONT_PATH);
-
-    let mut camera_bundle = OrthographicCameraBundle::new_2d();
-    camera_bundle.orthographic_projection.scale = CAMERA_SCALE;
-    commands.spawn_bundle(camera_bundle);
 
     spawn_bar(
         HEALTH_BAR_COLOR,
