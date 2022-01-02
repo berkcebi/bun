@@ -7,6 +7,8 @@ use bevy::{ecs::component::Component, prelude::*};
 const WIDTH: f32 = WINDOW_WIDTH * CAMERA_SCALE;
 const HEIGHT: f32 = WINDOW_HEIGHT * CAMERA_SCALE;
 
+const TRANSLATION_Z: f32 = 50.0;
+
 const BAR_WIDTH_SMALL: f32 = 96.0;
 const BAR_WIDTH_LARGE: f32 = 144.0;
 const BAR_HEIGHT: f32 = 16.0;
@@ -86,7 +88,7 @@ fn setup(
         Vec3::new(
             WIDTH * -0.5 + BAR_WIDTH_SMALL * 0.5 + BAR_MARGIN,
             HEIGHT * 0.5 - BAR_HEIGHT * 0.5 - BAR_MARGIN,
-            0.0,
+            TRANSLATION_Z,
         ),
         BAR_WIDTH_SMALL,
         HealthBar,
@@ -100,7 +102,7 @@ fn setup(
         Vec3::new(
             WIDTH * -0.5 + BAR_WIDTH_SMALL * 0.5 + BAR_MARGIN,
             HEIGHT * 0.5 - BAR_HEIGHT * 1.5 - BAR_MARGIN * 1.5,
-            0.0,
+            TRANSLATION_Z,
         ),
         BAR_WIDTH_SMALL,
         ManaBar,
@@ -111,7 +113,7 @@ fn setup(
 
     spawn_bar(
         CAST_BAR_COLOR,
-        Vec3::new(0.0, HEIGHT / -4.0, 0.0),
+        Vec3::new(0.0, HEIGHT / -4.0, TRANSLATION_Z),
         BAR_WIDTH_LARGE,
         CastBar,
         &mut commands,
