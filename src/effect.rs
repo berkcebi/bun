@@ -23,7 +23,7 @@ pub enum MomentaryEffectSchedule {
     Periodic(f32, f32),
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy)]
 pub enum LastingEffect {
     Silence,
 }
