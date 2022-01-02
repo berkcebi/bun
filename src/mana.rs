@@ -1,18 +1,18 @@
 use crate::ability::CastAbility;
 use bevy::prelude::*;
 
-const REGEN_MANA_POINTS: u8 = 1;
+const REGEN_MANA_POINTS: u16 = 1;
 const REGEN_MANA_INTERVAL: f64 = 0.5;
 const REGEN_MANA_COOLDOWN_DURATION: f32 = 5.0;
 
 pub struct Mana {
-    pub points: u8,
-    pub max_points: u8,
-    pub regen_points: u8,
+    pub points: u16,
+    pub max_points: u16,
+    pub regen_points: u16,
 }
 
 impl Mana {
-    pub fn new(points: u8) -> Self {
+    pub fn new(points: u16) -> Self {
         Self {
             points,
             max_points: points,

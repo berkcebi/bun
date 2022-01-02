@@ -13,8 +13,8 @@ pub enum Effect {
 
 #[derive(Clone, Copy)]
 pub enum MomentaryEffect {
-    LoseHealth(u8, u8),
-    GainHealth(u8, u8),
+    LoseHealth(u16, u16),
+    GainHealth(u16, u16),
 }
 
 #[derive(Clone, Copy)]

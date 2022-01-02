@@ -9,7 +9,7 @@ const ABILITY_COOLDOWN_DURATION: f32 = 1.5;
 #[derive(Clone, Copy)]
 pub struct Ability {
     pub name: &'static str,
-    pub mana_points: u8,
+    pub mana_points: u16,
     pub cast_duration: f32,
     pub effect: Effect,
     pub secondary_effect: Option<Effect>,

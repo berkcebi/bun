@@ -1,10 +1,10 @@
 pub struct Health {
-    pub points: u8,
-    pub max_points: u8,
+    pub points: u16,
+    pub max_points: u16,
 }
 
 impl Health {
-    pub fn new(points: u8) -> Self {
+    pub fn new(points: u16) -> Self {
         Self {
             points,
             max_points: points,

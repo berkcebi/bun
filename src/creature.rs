@@ -16,7 +16,7 @@ pub struct CreatureBundle {
 }
 
 impl CreatureBundle {
-    pub fn new(health_points: u8, mana_points: u8) -> Self {
+    pub fn new(health_points: u16, mana_points: u16) -> Self {
         Self {
             health: Health::new(health_points),
             mana: Mana::new(mana_points),
