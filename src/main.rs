@@ -36,7 +36,7 @@ fn main() {
         .add_plugin(InterfacePlugin)
         .add_plugin(ManaPlugin)
         .add_plugin(PlayerPlugin)
-        .add_system(setup.system())
+        .add_startup_system(setup.system())
         .add_system(bevy::input::system::exit_on_esc_system.system())
         .run();
 }
