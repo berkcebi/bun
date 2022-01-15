@@ -56,7 +56,7 @@ fn handle_keyboard_input(
         direction.y += 1.0;
     }
 
-    if direction.x != 0.0 || direction.y != 0.0 {
+    if direction != Vec3::ZERO {
         change_position_event_writer.send(ChangePosition {
             entity: player_entity,
             direction,
