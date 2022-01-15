@@ -6,6 +6,7 @@ mod health;
 mod interface;
 mod mana;
 mod player;
+mod position;
 mod sprite;
 
 use ability::AbilityPlugin;
@@ -14,6 +15,7 @@ use effect::EffectPlugin;
 use interface::InterfacePlugin;
 use mana::ManaPlugin;
 use player::PlayerPlugin;
+use position::PositionPlugin;
 use sprite::Sprite;
 
 const WINDOW_WIDTH: f32 = 800.0;
@@ -35,6 +37,7 @@ fn main() {
         .add_plugin(EffectPlugin)
         .add_plugin(InterfacePlugin)
         .add_plugin(ManaPlugin)
+        .add_plugin(PositionPlugin)
         .add_plugin(PlayerPlugin)
         .add_startup_system(setup.system())
         .add_system(bevy::input::system::exit_on_esc_system.system())

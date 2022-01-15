@@ -1,7 +1,8 @@
 use crate::{
     ability::{Ability, TryAbility},
-    creature::{CreatureBundle, CREATURE_SPEED},
+    creature::CreatureBundle,
     effect::{Effect, LastingEffect, MomentaryEffect, MomentaryEffectSchedule},
+    position::ChangePosition,
     sprite::Sprite,
 };
 use bevy::prelude::*;
@@ -30,11 +31,11 @@ fn spawn(mut commands: Commands, texture_atlases: Res<Assets<TextureAtlas>>) {
 
 fn handle_keyboard_input(
     keyboard_input: Res<Input<KeyCode>>,
-    time: Res<Time>,
+    mut change_position_event_writer: EventWriter<ChangePosition>,
     mut try_ability_event_writer: EventWriter<TryAbility>,
-    mut player_query: Query<(Entity, &mut Transform), With<Player>>,
+    player_query: Query<Entity, With<Player>>,
 ) {
-    let (player_entity, mut player_transform) = player_query.single_mut().unwrap();
+    let player_entity = player_query.single().unwrap();
 
     let mut direction = Vec3::ZERO;
 
@@ -54,7 +55,12 @@ fn handle_keyboard_input(
         direction.y += 1.0;
     }
 
-    player_transform.translation += direction * time.delta_seconds() * CREATURE_SPEED;
+    if direction.x != 0.0 || direction.y != 0.0 {
+        change_position_event_writer.send(ChangePosition {
+            entity: player_entity,
+            direction,
+        });
+    }
 
     if keyboard_input.just_pressed(KeyCode::Key1) {
         try_ability_event_writer.send(TryAbility {
