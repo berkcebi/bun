@@ -1,6 +1,7 @@
 #[derive(Clone, Copy)]
 pub enum Sprite {
     Player = 0,
+    Goblin = 1,
 }
 
 impl Sprite {

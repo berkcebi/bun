@@ -25,6 +25,7 @@ fn spawn(mut commands: Commands, texture_atlases: Res<Assets<TextureAtlas>>) {
         .insert_bundle(SpriteSheetBundle {
             texture_atlas: texture_atlases.get_handle(Sprite::SHEET_PATH),
             sprite: TextureAtlasSprite::new(Sprite::Player.index()),
+            transform: Transform::from_translation(Vec3::new(-80.0, 0.0, 0.0)),
             ..Default::default()
         });
 }

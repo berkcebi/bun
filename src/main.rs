@@ -2,6 +2,7 @@ mod ability;
 mod creature;
 mod critical;
 mod effect;
+mod enemy;
 mod health;
 mod interface;
 mod mana;
@@ -12,6 +13,7 @@ mod sprite;
 use ability::AbilityPlugin;
 use bevy::prelude::*;
 use effect::EffectPlugin;
+use enemy::EnemyPlugin;
 use interface::InterfacePlugin;
 use mana::ManaPlugin;
 use player::PlayerPlugin;
@@ -35,6 +37,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(AbilityPlugin)
         .add_plugin(EffectPlugin)
+        .add_plugin(EnemyPlugin)
         .add_plugin(InterfacePlugin)
         .add_plugin(ManaPlugin)
         .add_plugin(PositionPlugin)
