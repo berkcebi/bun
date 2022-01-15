@@ -6,6 +6,8 @@ use crate::{
 };
 use bevy::prelude::*;
 
+pub const CREATURE_SPEED: f32 = 60.0;
+
 #[derive(Bundle)]
 pub struct CreatureBundle {
     health: Health,

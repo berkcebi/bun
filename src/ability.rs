@@ -1,6 +1,7 @@
 use crate::{
     effect::{Effect, LastingEffect, LastingEffects, PerformEffect},
     mana::{Mana, RegenManaCooldown},
+    position::ChangingPosition,
 };
 use bevy::prelude::*;
 
@@ -96,10 +97,11 @@ fn try_ability(
         &LastingEffects,
         Option<&CastAbility>,
         Option<&AbilityCooldown>,
+        Option<&ChangingPosition>,
     )>,
 ) {
     for try_ability in try_ability_event_reader.iter() {
-        let (mana, lasting_effects, cast_ability, ability_cooldown) =
+        let (mana, lasting_effects, cast_ability, ability_cooldown, changing_position) =
             query.get_mut(try_ability.source).unwrap();
 
         if cast_ability.is_some() {
@@ -114,6 +116,12 @@ fn try_ability(
             .any(|instance| matches!(instance.effect, LastingEffect::Silence))
         {
             info!("Silenced.");
+
+            continue;
+        }
+
+        if changing_position.is_some() && try_ability.ability.cast_duration > 0.0 {
+            info!("Moving.");
 
             continue;
         }
@@ -152,9 +160,15 @@ fn cast_ability(
     mut commands: Commands,
     time: Res<Time>,
     mut perform_ability_event_writer: EventWriter<PerformAbility>,
-    mut query: Query<(Entity, &mut CastAbility)>,
+    mut query: Query<(Entity, &mut CastAbility, Option<&ChangingPosition>)>,
 ) {
-    for (entity, mut cast_ability) in query.iter_mut() {
+    for (entity, mut cast_ability, changing_position) in query.iter_mut() {
+        if changing_position.is_some() {
+            commands.entity(entity).remove::<CastAbility>();
+
+            continue;
+        }
+
         cast_ability.duration_timer.tick(time.delta());
 
         if cast_ability.duration_timer.finished() {

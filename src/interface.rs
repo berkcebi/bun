@@ -1,12 +1,13 @@
 use crate::{
-    ability::CastAbility, health::Health, mana::Mana, player::Player, WINDOW_HEIGHT, WINDOW_WIDTH,
+    ability::CastAbility, health::Health, mana::Mana, player::Player, CAMERA_SCALE, WINDOW_HEIGHT,
+    WINDOW_WIDTH,
 };
 use bevy::{ecs::component::Component, prelude::*};
 
-const CAMERA_SCALE: f32 = 1.0 / 2.0;
-
 const WIDTH: f32 = WINDOW_WIDTH * CAMERA_SCALE;
 const HEIGHT: f32 = WINDOW_HEIGHT * CAMERA_SCALE;
+
+const TRANSLATION_Z: f32 = 50.0;
 
 const BAR_WIDTH_SMALL: f32 = 96.0;
 const BAR_WIDTH_LARGE: f32 = 144.0;
@@ -82,16 +83,12 @@ fn setup(
 ) {
     let bar_text_font = asset_server.load(BAR_TEXT_FONT_PATH);
 
-    let mut camera_bundle = OrthographicCameraBundle::new_2d();
-    camera_bundle.orthographic_projection.scale = CAMERA_SCALE;
-    commands.spawn_bundle(camera_bundle);
-
     spawn_bar(
         HEALTH_BAR_COLOR,
         Vec3::new(
             WIDTH * -0.5 + BAR_WIDTH_SMALL * 0.5 + BAR_MARGIN,
             HEIGHT * 0.5 - BAR_HEIGHT * 0.5 - BAR_MARGIN,
-            0.0,
+            TRANSLATION_Z,
         ),
         BAR_WIDTH_SMALL,
         HealthBar,
@@ -105,7 +102,7 @@ fn setup(
         Vec3::new(
             WIDTH * -0.5 + BAR_WIDTH_SMALL * 0.5 + BAR_MARGIN,
             HEIGHT * 0.5 - BAR_HEIGHT * 1.5 - BAR_MARGIN * 1.5,
-            0.0,
+            TRANSLATION_Z,
         ),
         BAR_WIDTH_SMALL,
         ManaBar,
@@ -116,7 +113,7 @@ fn setup(
 
     spawn_bar(
         CAST_BAR_COLOR,
-        Vec3::new(0.0, HEIGHT / -4.0, 0.0),
+        Vec3::new(0.0, HEIGHT / -4.0, TRANSLATION_Z),
         BAR_WIDTH_LARGE,
         CastBar,
         &mut commands,

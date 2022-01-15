@@ -2,6 +2,8 @@ use crate::{
     ability::{Ability, TryAbility},
     creature::CreatureBundle,
     effect::{Effect, LastingEffect, MomentaryEffect, MomentaryEffectSchedule},
+    position::ChangePosition,
+    sprite::Sprite,
 };
 use bevy::prelude::*;
 
@@ -16,18 +18,50 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-fn spawn(mut commands: Commands) {
+fn spawn(mut commands: Commands, texture_atlases: Res<Assets<TextureAtlas>>) {
     commands
-        .spawn_bundle(CreatureBundle::new(200, 100))
-        .insert(Player);
+        .spawn_bundle(CreatureBundle::new(160, 100))
+        .insert(Player)
+        .insert_bundle(SpriteSheetBundle {
+            texture_atlas: texture_atlases.get_handle(Sprite::SHEET_PATH),
+            sprite: TextureAtlasSprite::new(Sprite::Player.index()),
+            transform: Transform::from_translation(Vec3::new(-80.0, 0.0, 0.0)),
+            ..Default::default()
+        });
 }
 
 fn handle_keyboard_input(
     keyboard_input: Res<Input<KeyCode>>,
+    mut change_position_event_writer: EventWriter<ChangePosition>,
     mut try_ability_event_writer: EventWriter<TryAbility>,
     player_query: Query<Entity, With<Player>>,
 ) {
     let player_entity = player_query.single().unwrap();
+
+    let mut direction = Vec3::ZERO;
+
+    if keyboard_input.pressed(KeyCode::A) {
+        direction.x -= 1.0;
+    }
+
+    if keyboard_input.pressed(KeyCode::D) {
+        direction.x += 1.0;
+    }
+
+    if keyboard_input.pressed(KeyCode::S) {
+        direction.y -= 1.0;
+    }
+
+    if keyboard_input.pressed(KeyCode::W) {
+        direction.y += 1.0;
+    }
+
+    if direction != Vec3::ZERO {
+        change_position_event_writer.send(ChangePosition {
+            entity: player_entity,
+            direction,
+        });
+    }
 
     if keyboard_input.just_pressed(KeyCode::Key1) {
         try_ability_event_writer.send(TryAbility {
