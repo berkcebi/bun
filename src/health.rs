@@ -1,3 +1,6 @@
+use bevy::prelude::*;
+
+#[derive(Component)]
 pub struct Health {
     pub points: u16,
     pub max_points: u16,

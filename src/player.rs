@@ -7,14 +7,15 @@ use crate::{
 };
 use bevy::prelude::*;
 
+#[derive(Component)]
 pub struct Player;
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
-    fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_system(spawn.system())
-            .add_system(handle_keyboard_input.system());
+    fn build(&self, app: &mut App) {
+        app.add_startup_system(spawn)
+            .add_system(handle_keyboard_input);
     }
 }
 
@@ -36,7 +37,7 @@ fn handle_keyboard_input(
     mut try_ability_event_writer: EventWriter<TryAbility>,
     player_query: Query<Entity, With<Player>>,
 ) {
-    let player_entity = player_query.single().unwrap();
+    let player_entity = player_query.single();
 
     let mut direction = Vec3::ZERO;
 

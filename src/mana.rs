@@ -5,6 +5,7 @@ const REGEN_MANA_POINTS: u16 = 1;
 const REGEN_MANA_INTERVAL: f64 = 0.5;
 const REGEN_MANA_COOLDOWN_DURATION: f32 = 5.0;
 
+#[derive(Component)]
 pub struct Mana {
     pub points: u16,
     pub max_points: u16,
@@ -22,6 +23,7 @@ impl Mana {
 }
 
 /// Component to disable mana regeneration for a defined duration.
+#[derive(Component)]
 pub struct RegenManaCooldown {
     duration_timer: Timer,
 }
@@ -37,13 +39,13 @@ impl RegenManaCooldown {
 pub struct ManaPlugin;
 
 impl Plugin for ManaPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_system_set(
             SystemSet::new()
                 .with_run_criteria(bevy::core::FixedTimestep::step(REGEN_MANA_INTERVAL))
-                .with_system(regen_mana.system()),
+                .with_system(regen_mana),
         )
-        .add_system(remove_regen_mana_cooldown.system());
+        .add_system(remove_regen_mana_cooldown);
     }
 }
 

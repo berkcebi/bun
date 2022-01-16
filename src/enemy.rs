@@ -3,13 +3,14 @@ use bevy::prelude::*;
 
 const GOBLIN_TRANSLATIONS: [(f32, f32, f32); 2] = [(80.0, 30.0, 0.0), (80.0, -30.0, 0.0)];
 
+#[derive(Component)]
 pub struct Enemy;
 
 pub struct EnemyPlugin;
 
 impl Plugin for EnemyPlugin {
-    fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_system(spawn.system());
+    fn build(&self, app: &mut App) {
+        app.add_startup_system(spawn);
     }
 }
 

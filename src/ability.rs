@@ -31,6 +31,7 @@ struct PerformAbility {
 }
 
 /// Component to store cast duration for an ability.
+#[derive(Component)]
 pub struct CastAbility {
     pub ability: Ability,
     pub target: Entity,
@@ -48,6 +49,7 @@ impl CastAbility {
 }
 
 /// Component to disable casting for a defined duration, i.e. global cooldown.
+#[derive(Component)]
 struct AbilityCooldown {
     duration_timer: Timer,
 }
@@ -63,13 +65,13 @@ impl Default for AbilityCooldown {
 pub struct AbilityPlugin;
 
 impl Plugin for AbilityPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_event::<TryAbility>()
             .add_event::<PerformAbility>()
-            .add_system(remove_ability_cooldown.system())
-            .add_system(try_ability.system())
-            .add_system(cast_ability.system())
-            .add_system(perform_ability.system());
+            .add_system(remove_ability_cooldown)
+            .add_system(try_ability)
+            .add_system(cast_ability)
+            .add_system(perform_ability);
     }
 }
 
