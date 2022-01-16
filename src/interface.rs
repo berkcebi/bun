@@ -57,30 +57,29 @@ impl Progressive for CastAbility {
     }
 }
 
+#[derive(Component)]
 struct HealthBar;
+#[derive(Component)]
 struct ManaBar;
+#[derive(Component)]
 struct CastBar;
 
 pub struct InterfacePlugin;
 
 impl Plugin for InterfacePlugin {
-    fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_system(setup.system())
-            .add_system(update_bar_text::<Health, HealthBar>.system())
-            .add_system(update_bar_indicator::<Health, HealthBar>.system())
-            .add_system(update_bar_text::<Mana, ManaBar>.system())
-            .add_system(update_bar_indicator::<Mana, ManaBar>.system())
-            .add_system(update_bar_text::<CastAbility, CastBar>.system())
-            .add_system(update_bar_indicator::<CastAbility, CastBar>.system())
-            .add_system(update_cast_bar_visible.system());
+    fn build(&self, app: &mut App) {
+        app.add_startup_system(setup)
+            .add_system(update_bar_text::<Health, HealthBar>)
+            .add_system(update_bar_indicator::<Health, HealthBar>)
+            .add_system(update_bar_text::<Mana, ManaBar>)
+            .add_system(update_bar_indicator::<Mana, ManaBar>)
+            .add_system(update_bar_text::<CastAbility, CastBar>)
+            .add_system(update_bar_indicator::<CastAbility, CastBar>)
+            .add_system(update_cast_bar_visibility);
     }
 }
 
-fn setup(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut color_materials: ResMut<Assets<ColorMaterial>>,
-) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     let bar_text_font = asset_server.load(BAR_TEXT_FONT_PATH);
 
     spawn_bar(
@@ -94,7 +93,6 @@ fn setup(
         HealthBar,
         &mut commands,
         bar_text_font.clone(),
-        &mut color_materials,
     );
 
     spawn_bar(
@@ -108,7 +106,6 @@ fn setup(
         ManaBar,
         &mut commands,
         bar_text_font.clone(),
-        &mut color_materials,
     );
 
     spawn_bar(
@@ -118,7 +115,6 @@ fn setup(
         CastBar,
         &mut commands,
         bar_text_font,
-        &mut color_materials,
     );
 }
 
@@ -127,12 +123,12 @@ fn update_bar_text<T: Progressive, U: Component>(
     mut bar_children_text_query: Query<&mut Text>,
     progressive_query: Query<&T, With<Player>>,
 ) {
-    let progressive = match progressive_query.single() {
+    let progressive = match progressive_query.get_single() {
         Ok(result) => result,
         Err(_) => return,
     };
 
-    let bar_children = bar_children_query.single().unwrap();
+    let bar_children = bar_children_query.single();
     for &bar_child in bar_children.iter() {
         let mut bar_text = match bar_children_text_query.get_mut(bar_child) {
             Ok(result) => result,
@@ -145,36 +141,38 @@ fn update_bar_text<T: Progressive, U: Component>(
 
 fn update_bar_indicator<T: Progressive, U: Component>(
     bar_query: Query<(&Children, &Sprite), With<U>>,
-    mut bar_children_indicator_query: Query<(&mut Sprite, &mut Transform), Without<U>>,
+    mut bar_child_indicator_query: Query<(&mut Sprite, &mut Transform), Without<U>>,
     progressive_query: Query<&T, With<Player>>,
 ) {
-    let progressive = match progressive_query.single() {
+    let progressive = match progressive_query.get_single() {
         Ok(result) => result,
         Err(_) => return,
     };
 
-    let (bar_children, bar_sprite) = bar_query.single().unwrap();
+    let (bar_children, bar_sprite) = bar_query.single();
     for &bar_child in bar_children.iter() {
         let (mut bar_indicator_sprite, mut bar_indicator_transform) =
-            match bar_children_indicator_query.get_mut(bar_child) {
+            match bar_child_indicator_query.get_mut(bar_child) {
                 Ok(result) => result,
                 Err(_) => continue,
             };
 
-        let bar_width = bar_sprite.size.x;
+        let bar_width = bar_sprite.custom_size.unwrap().x;
+        let bar_indicator_height = bar_indicator_sprite.custom_size.unwrap().y;
 
         let bar_indicator_width = (bar_width * progressive.get_progress()).round();
-        bar_indicator_sprite.size.x = bar_indicator_width;
+        bar_indicator_sprite.custom_size =
+            Some(Vec2::new(bar_indicator_width, bar_indicator_height));
         bar_indicator_transform.translation.x = bar_width * -0.5 + bar_indicator_width / 2.0;
     }
 }
 
-fn update_cast_bar_visible(
-    mut bar_query: Query<(&Children, &mut Visible), With<CastBar>>,
-    mut bar_children_visible_query: Query<&mut Visible, Without<CastBar>>,
+fn update_cast_bar_visibility(
+    mut bar_query: Query<(&Children, &mut Visibility), With<CastBar>>,
+    mut bar_child_visibility_query: Query<&mut Visibility, Without<CastBar>>,
     cast_ability_query: Query<&CastAbility, With<Player>>,
 ) {
-    let is_visible = match cast_ability_query.single() {
+    let is_casting = match cast_ability_query.get_single() {
         Ok(cast_ability) => {
             cast_ability.duration_timer.elapsed_secs() > 0.0
                 && !cast_ability.duration_timer.finished()
@@ -182,17 +180,17 @@ fn update_cast_bar_visible(
         Err(_) => false,
     };
 
-    let (bar_children, mut bar_visible) = bar_query.single_mut().unwrap();
+    let (bar_children, mut bar_visibility) = bar_query.single_mut();
 
-    bar_visible.is_visible = is_visible;
+    bar_visibility.is_visible = is_casting;
 
     for &bar_child in bar_children.iter() {
-        let mut bar_visible = match bar_children_visible_query.get_mut(bar_child) {
+        let mut bar_child_visibility = match bar_child_visibility_query.get_mut(bar_child) {
             Ok(result) => result,
             Err(_) => continue,
         };
 
-        bar_visible.is_visible = is_visible;
+        bar_child_visibility.is_visible = is_casting;
     }
 }
 
@@ -203,23 +201,28 @@ fn spawn_bar<T: Component>(
     component: T,
     commands: &mut Commands,
     bar_text_font_handle: Handle<Font>,
-    color_materials: &mut ResMut<Assets<ColorMaterial>>,
 ) {
     let mut bar_background_color = color;
     bar_background_color.set_a(BAR_BACKGROUND_COLOR_ALPHA);
 
     commands
         .spawn_bundle(SpriteBundle {
-            material: color_materials.add(bar_background_color.into()),
-            sprite: Sprite::new(Vec2::new(width, BAR_HEIGHT)),
+            sprite: Sprite {
+                custom_size: Some(Vec2::new(width, BAR_HEIGHT)),
+                color: bar_background_color,
+                ..Default::default()
+            },
             transform: Transform::from_translation(translation),
             ..Default::default()
         })
         .insert(component)
         .with_children(|parent| {
             parent.spawn_bundle(SpriteBundle {
-                material: color_materials.add(color.into()),
-                sprite: Sprite::new(Vec2::new(0.0, BAR_HEIGHT)),
+                sprite: Sprite {
+                    custom_size: Some(Vec2::new(0.0, BAR_HEIGHT)),
+                    color,
+                    ..Default::default()
+                },
                 ..Default::default()
             });
 

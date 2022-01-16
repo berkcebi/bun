@@ -25,7 +25,7 @@ const WINDOW_HEIGHT: f32 = 600.0;
 const CAMERA_SCALE: f32 = 1.0 / 2.0;
 
 fn main() {
-    App::build()
+    App::new()
         .insert_resource(ClearColor(Color::BLACK))
         .insert_resource(WindowDescriptor {
             title: "Bun".to_string(),
@@ -42,8 +42,8 @@ fn main() {
         .add_plugin(ManaPlugin)
         .add_plugin(PositionPlugin)
         .add_plugin(PlayerPlugin)
-        .add_startup_system(setup.system())
-        .add_system(bevy::input::system::exit_on_esc_system.system())
+        .add_startup_system(setup)
+        .add_system(bevy::input::system::exit_on_esc_system)
         .run();
 }
 

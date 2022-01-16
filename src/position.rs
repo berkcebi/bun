@@ -8,14 +8,15 @@ pub struct ChangePosition {
 }
 
 /// Component to indicate position changing.
+#[derive(Component)]
 pub struct ChangingPosition;
 
 pub struct PositionPlugin;
 
 impl Plugin for PositionPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_event::<ChangePosition>()
-            .add_system(change_position.system());
+            .add_system(change_position);
     }
 }
 

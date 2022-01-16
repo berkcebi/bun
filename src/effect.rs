@@ -43,7 +43,7 @@ struct PerformMomentaryEffect {
 }
 
 /// Component to store ongoing periodic momentary effects.
-#[derive(Default)]
+#[derive(Component, Default)]
 pub struct PeriodicMomentaryEffects {
     instances: Vec<PeriodicMomentaryEffectInstance>,
 }
@@ -56,7 +56,7 @@ struct PeriodicMomentaryEffectInstance {
 }
 
 /// Component to store ongoing lasting effects.
-#[derive(Default)]
+#[derive(Component, Default)]
 pub struct LastingEffects {
     pub instances: Vec<LastingEffectInstance>,
 }
@@ -70,13 +70,13 @@ pub struct LastingEffectInstance {
 pub struct EffectPlugin;
 
 impl Plugin for EffectPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_event::<PerformEffect>()
             .add_event::<PerformMomentaryEffect>()
-            .add_system(perform_effect.system())
-            .add_system(perform_momentary_effect.system())
-            .add_system(tick_periodic_momentary_effects.system())
-            .add_system(tick_lasting_effects.system());
+            .add_system(perform_effect)
+            .add_system(perform_momentary_effect)
+            .add_system(tick_periodic_momentary_effects)
+            .add_system(tick_lasting_effects);
     }
 }
 

@@ -2,8 +2,8 @@
 name = "bun"
 version = "0.1.0"
 authors = ["Berk Çebi <berkcebi@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-bevy = "^0.5"
+bevy = "^0.6"
 rand = "^0.8"

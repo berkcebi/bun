@@ -10,7 +10,7 @@ impl Sprite {
     pub const SHEET_COLUMNS: usize = 3;
     pub const SHEET_ROWS: usize = 1;
 
-    pub fn index(&self) -> u32 {
-        *self as u32
+    pub fn index(&self) -> usize {
+        *self as usize
     }
 }
