@@ -73,14 +73,14 @@ impl Plugin for EffectPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<PerformEffect>()
             .add_event::<PerformMomentaryEffect>()
-            .add_system(perform_effect)
-            .add_system(perform_momentary_effect)
-            .add_system(tick_periodic_momentary_effects)
-            .add_system(tick_lasting_effects);
+            .add_system(perform_effect_system)
+            .add_system(perform_momentary_effect_system)
+            .add_system(tick_periodic_momentary_effects_system)
+            .add_system(tick_lasting_effects_system);
     }
 }
 
-fn perform_effect(
+fn perform_effect_system(
     mut perform_effect_event_reader: EventReader<PerformEffect>,
     mut perform_momentary_effect_event_writer: EventWriter<PerformMomentaryEffect>,
     mut periodic_momentary_effects_query: Query<&mut PeriodicMomentaryEffects>,
@@ -122,7 +122,7 @@ fn perform_effect(
     }
 }
 
-fn perform_momentary_effect(
+fn perform_momentary_effect_system(
     mut perform_momentary_effect_event_reader: EventReader<PerformMomentaryEffect>,
     mut critical_query: Query<Option<&Critical>>,
     mut health_query: Query<&mut Health>,
@@ -174,7 +174,7 @@ fn perform_momentary_effect(
     }
 }
 
-fn tick_periodic_momentary_effects(
+fn tick_periodic_momentary_effects_system(
     time: Res<Time>,
     mut perform_momentary_effect_event_writer: EventWriter<PerformMomentaryEffect>,
     mut query: Query<(Entity, &mut PeriodicMomentaryEffects)>,
@@ -198,7 +198,7 @@ fn tick_periodic_momentary_effects(
     }
 }
 
-fn tick_lasting_effects(time: Res<Time>, mut query: Query<&mut LastingEffects>) {
+fn tick_lasting_effects_system(time: Res<Time>, mut query: Query<&mut LastingEffects>) {
     for mut lasting_effects in query.iter_mut() {
         let instances = &mut lasting_effects.instances;
         for instance in instances.iter_mut() {

@@ -42,12 +42,12 @@ fn main() {
         .add_plugin(ManaPlugin)
         .add_plugin(PositionPlugin)
         .add_plugin(PlayerPlugin)
-        .add_startup_system(setup)
+        .add_startup_system(setup_system)
         .add_system(bevy::input::system::exit_on_esc_system)
         .run();
 }
 
-fn setup(
+fn setup_system(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,

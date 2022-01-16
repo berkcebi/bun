@@ -14,12 +14,12 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(spawn)
-            .add_system(handle_keyboard_input);
+        app.add_startup_system(spawn_system)
+            .add_system(handle_keyboard_input_system);
     }
 }
 
-fn spawn(mut commands: Commands, texture_atlases: Res<Assets<TextureAtlas>>) {
+fn spawn_system(mut commands: Commands, texture_atlases: Res<Assets<TextureAtlas>>) {
     commands
         .spawn_bundle(CreatureBundle::new(160, 100))
         .insert(Player)
@@ -31,7 +31,7 @@ fn spawn(mut commands: Commands, texture_atlases: Res<Assets<TextureAtlas>>) {
         });
 }
 
-fn handle_keyboard_input(
+fn handle_keyboard_input_system(
     keyboard_input: Res<Input<KeyCode>>,
     mut change_position_event_writer: EventWriter<ChangePosition>,
     mut try_ability_event_writer: EventWriter<TryAbility>,

@@ -69,13 +69,13 @@ pub struct InterfacePlugin;
 impl Plugin for InterfacePlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup)
-            .add_system(update_bar_text::<Health, HealthBar>)
-            .add_system(update_bar_indicator::<Health, HealthBar>)
-            .add_system(update_bar_text::<Mana, ManaBar>)
-            .add_system(update_bar_indicator::<Mana, ManaBar>)
-            .add_system(update_bar_text::<CastAbility, CastBar>)
-            .add_system(update_bar_indicator::<CastAbility, CastBar>)
-            .add_system(update_cast_bar_visibility);
+            .add_system(update_bar_text_system::<Health, HealthBar>)
+            .add_system(update_bar_indicator_system::<Health, HealthBar>)
+            .add_system(update_bar_text_system::<Mana, ManaBar>)
+            .add_system(update_bar_indicator_system::<Mana, ManaBar>)
+            .add_system(update_bar_text_system::<CastAbility, CastBar>)
+            .add_system(update_bar_indicator_system::<CastAbility, CastBar>)
+            .add_system(update_cast_bar_visibility_system);
     }
 }
 
@@ -118,7 +118,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     );
 }
 
-fn update_bar_text<T: Progressive, U: Component>(
+fn update_bar_text_system<T: Progressive, U: Component>(
     bar_children_query: Query<&Children, With<U>>,
     mut bar_children_text_query: Query<&mut Text>,
     progressive_query: Query<&T, With<Player>>,
@@ -139,7 +139,7 @@ fn update_bar_text<T: Progressive, U: Component>(
     }
 }
 
-fn update_bar_indicator<T: Progressive, U: Component>(
+fn update_bar_indicator_system<T: Progressive, U: Component>(
     bar_query: Query<(&Children, &Sprite), With<U>>,
     mut bar_child_indicator_query: Query<(&mut Sprite, &mut Transform), Without<U>>,
     progressive_query: Query<&T, With<Player>>,
@@ -167,7 +167,7 @@ fn update_bar_indicator<T: Progressive, U: Component>(
     }
 }
 
-fn update_cast_bar_visibility(
+fn update_cast_bar_visibility_system(
     mut bar_query: Query<(&Children, &mut Visibility), With<CastBar>>,
     mut bar_child_visibility_query: Query<&mut Visibility, Without<CastBar>>,
     cast_ability_query: Query<&CastAbility, With<Player>>,

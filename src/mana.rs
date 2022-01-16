@@ -43,13 +43,15 @@ impl Plugin for ManaPlugin {
         app.add_system_set(
             SystemSet::new()
                 .with_run_criteria(bevy::core::FixedTimestep::step(REGEN_MANA_INTERVAL))
-                .with_system(regen_mana),
+                .with_system(regen_mana_system),
         )
-        .add_system(remove_regen_mana_cooldown);
+        .add_system(remove_regen_mana_cooldown_system);
     }
 }
 
-fn regen_mana(mut query: Query<&mut Mana, (Without<CastAbility>, Without<RegenManaCooldown>)>) {
+fn regen_mana_system(
+    mut query: Query<&mut Mana, (Without<CastAbility>, Without<RegenManaCooldown>)>,
+) {
     for mut mana in query.iter_mut() {
         if mana.points < mana.max_points {
             mana.points = (mana.points + mana.regen_points).min(mana.max_points);
@@ -57,7 +59,7 @@ fn regen_mana(mut query: Query<&mut Mana, (Without<CastAbility>, Without<RegenMa
     }
 }
 
-fn remove_regen_mana_cooldown(
+fn remove_regen_mana_cooldown_system(
     mut commands: Commands,
     time: Res<Time>,
     mut query: Query<(Entity, &mut RegenManaCooldown)>,

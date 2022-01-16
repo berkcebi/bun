@@ -16,11 +16,11 @@ pub struct PositionPlugin;
 impl Plugin for PositionPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ChangePosition>()
-            .add_system(change_position);
+            .add_system(change_position_system);
     }
 }
 
-fn change_position(
+fn change_position_system(
     mut commands: Commands,
     time: Res<Time>,
     mut change_position_event_reader: EventReader<ChangePosition>,

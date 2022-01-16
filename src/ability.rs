@@ -68,14 +68,14 @@ impl Plugin for AbilityPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<TryAbility>()
             .add_event::<PerformAbility>()
-            .add_system(remove_ability_cooldown)
-            .add_system(try_ability)
-            .add_system(cast_ability)
-            .add_system(perform_ability);
+            .add_system(remove_ability_cooldown_system)
+            .add_system(try_ability_system)
+            .add_system(cast_ability_system)
+            .add_system(perform_ability_system);
     }
 }
 
-fn remove_ability_cooldown(
+fn remove_ability_cooldown_system(
     mut commands: Commands,
     time: Res<Time>,
     mut query: Query<(Entity, &mut AbilityCooldown)>,
@@ -90,7 +90,7 @@ fn remove_ability_cooldown(
     }
 }
 
-fn try_ability(
+fn try_ability_system(
     mut commands: Commands,
     mut try_ability_event_reader: EventReader<TryAbility>,
     mut perform_ability_event_writer: EventWriter<PerformAbility>,
@@ -158,7 +158,7 @@ fn try_ability(
     }
 }
 
-fn cast_ability(
+fn cast_ability_system(
     mut commands: Commands,
     time: Res<Time>,
     mut perform_ability_event_writer: EventWriter<PerformAbility>,
@@ -185,7 +185,7 @@ fn cast_ability(
     }
 }
 
-fn perform_ability(
+fn perform_ability_system(
     mut commands: Commands,
     mut perform_ability_event_reader: EventReader<PerformAbility>,
     mut perform_effect_event_writer: EventWriter<PerformEffect>,
