@@ -3,6 +3,7 @@ use crate::{
     effect::{LastingEffects, PeriodicMomentaryEffects},
     health::Health,
     mana::Mana,
+    target::Target,
 };
 use bevy::prelude::*;
 
@@ -15,6 +16,7 @@ pub struct CreatureBundle {
     critical: Critical,
     periodic_momentary_effects: PeriodicMomentaryEffects,
     lasting_effects: LastingEffects,
+    target: Target,
 }
 
 impl CreatureBundle {
@@ -25,6 +27,7 @@ impl CreatureBundle {
             critical: Critical::default(),
             periodic_momentary_effects: PeriodicMomentaryEffects::default(),
             lasting_effects: LastingEffects::default(),
+            target: Target::default(),
         }
     }
 }

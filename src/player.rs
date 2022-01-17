@@ -4,6 +4,7 @@ use crate::{
     effect::{Effect, LastingEffect, MomentaryEffect, MomentaryEffectSchedule},
     position::ChangePosition,
     sprite::Sprite,
+    target::Target,
 };
 use bevy::prelude::*;
 
@@ -35,9 +36,9 @@ fn handle_keyboard_input_system(
     keyboard_input: Res<Input<KeyCode>>,
     mut change_position_event_writer: EventWriter<ChangePosition>,
     mut try_ability_event_writer: EventWriter<TryAbility>,
-    player_query: Query<Entity, With<Player>>,
+    query: Query<(Entity, &Target), With<Player>>,
 ) {
-    let player_entity = player_query.single();
+    let (entity, target) = query.single();
 
     let mut direction = Vec3::ZERO;
 
@@ -58,15 +59,12 @@ fn handle_keyboard_input_system(
     }
 
     if direction != Vec3::ZERO {
-        change_position_event_writer.send(ChangePosition {
-            entity: player_entity,
-            direction,
-        });
+        change_position_event_writer.send(ChangePosition { entity, direction });
     }
 
     if keyboard_input.just_pressed(KeyCode::Key1) {
         try_ability_event_writer.send(TryAbility {
-            source: player_entity,
+            source: entity,
             ability: Ability {
                 name: "Fireball",
                 mana_points: 20,
@@ -80,13 +78,13 @@ fn handle_keyboard_input_system(
                     MomentaryEffectSchedule::Periodic(3.0, 12.0),
                 )),
             },
-            target: player_entity,
+            target: target.entity,
         });
     }
 
     if keyboard_input.just_pressed(KeyCode::Key2) {
         try_ability_event_writer.send(TryAbility {
-            source: player_entity,
+            source: entity,
             ability: Ability {
                 name: "Fire Blast",
                 mana_points: 15,
@@ -97,13 +95,13 @@ fn handle_keyboard_input_system(
                 ),
                 secondary_effect: None,
             },
-            target: player_entity,
+            target: target.entity,
         });
     }
 
     if keyboard_input.just_pressed(KeyCode::Key3) {
         try_ability_event_writer.send(TryAbility {
-            source: player_entity,
+            source: entity,
             ability: Ability {
                 name: "Lesser Heal",
                 mana_points: 15,
@@ -114,13 +112,13 @@ fn handle_keyboard_input_system(
                 ),
                 secondary_effect: None,
             },
-            target: player_entity,
+            target: target.entity,
         });
     }
 
     if keyboard_input.just_pressed(KeyCode::Q) {
         try_ability_event_writer.send(TryAbility {
-            source: player_entity,
+            source: entity,
             ability: Ability {
                 name: "Silence",
                 mana_points: 20,
@@ -128,7 +126,7 @@ fn handle_keyboard_input_system(
                 effect: Effect::Lasting(LastingEffect::Silence, 4.0),
                 secondary_effect: None,
             },
-            target: player_entity,
+            target: target.entity,
         });
     }
 }

@@ -20,7 +20,7 @@ pub struct Ability {
 pub struct TryAbility {
     pub source: Entity,
     pub ability: Ability,
-    pub target: Entity,
+    pub target: Option<Entity>,
 }
 
 /// Internal event to perform an ability via a try ability event.
@@ -103,6 +103,15 @@ fn try_ability_system(
     )>,
 ) {
     for try_ability in try_ability_event_reader.iter() {
+        let target = match try_ability.target {
+            Some(result) => result,
+            None => {
+                info!("No target.");
+
+                continue;
+            }
+        };
+
         let (mana, lasting_effects, cast_ability, ability_cooldown, changing_position) =
             query.get_mut(try_ability.source).unwrap();
 
@@ -147,12 +156,12 @@ fn try_ability_system(
         if try_ability.ability.cast_duration > 0.0 {
             commands
                 .entity(try_ability.source)
-                .insert(CastAbility::new(try_ability.ability, try_ability.target));
+                .insert(CastAbility::new(try_ability.ability, target));
         } else {
             perform_ability_event_writer.send(PerformAbility {
                 source: try_ability.source,
                 ability: try_ability.ability,
-                target: try_ability.target,
+                target,
             });
         }
     }

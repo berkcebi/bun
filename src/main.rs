@@ -9,6 +9,7 @@ mod mana;
 mod player;
 mod position;
 mod sprite;
+mod target;
 
 use ability::AbilityPlugin;
 use bevy::prelude::*;
