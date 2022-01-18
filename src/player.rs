@@ -11,6 +11,11 @@ use bevy::prelude::*;
 
 const DISTANCE_LIMIT: f32 = 75.0;
 
+/// Event to communicate player target changing.
+pub struct PlayerTargetChanged {
+    pub target_entity: Option<Entity>,
+}
+
 #[derive(Component)]
 pub struct Player;
 
@@ -18,7 +23,8 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(spawn_system)
+        app.add_event::<PlayerTargetChanged>()
+            .add_startup_system(spawn_system)
             .add_system(handle_keyboard_input_system)
             .add_system(handle_cursor_moved_system);
     }
@@ -136,11 +142,12 @@ fn handle_keyboard_input_system(
 }
 
 fn handle_cursor_moved_system(
-    mut cursor_moved_events: EventReader<CursorMoved>,
+    mut cursor_moved_event_reader: EventReader<CursorMoved>,
+    mut player_target_changed_event_writer: EventWriter<PlayerTargetChanged>,
     creature_query: Query<(Entity, &Transform), With<Creature>>,
     mut player_query: Query<&mut Target, With<Player>>,
 ) {
-    for cursor_moved in cursor_moved_events.iter() {
+    if let Some(cursor_moved) = cursor_moved_event_reader.iter().last() {
         let cursor_position = cursor_moved.position;
         let cursor_position_matrix = cursor_position.extend(0.0).extend(1.0);
 
@@ -171,6 +178,10 @@ fn handle_cursor_moved_system(
         let mut player_target = player_query.single_mut();
         if player_target.entity != closest_creature_entity {
             player_target.entity = closest_creature_entity;
+
+            player_target_changed_event_writer.send(PlayerTargetChanged {
+                target_entity: player_target.entity,
+            });
         }
     }
 }

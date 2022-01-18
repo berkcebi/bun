@@ -1,6 +1,9 @@
 use crate::{
-    ability::CastAbility, health::Health, mana::Mana, player::Player, CAMERA_SCALE, WINDOW_HEIGHT,
-    WINDOW_WIDTH,
+    ability::CastAbility,
+    health::Health,
+    mana::Mana,
+    player::{Player, PlayerTargetChanged},
+    CAMERA_SCALE, WINDOW_HEIGHT, WINDOW_WIDTH,
 };
 use bevy::{ecs::component::Component, prelude::*};
 
@@ -63,6 +66,8 @@ struct HealthBar;
 struct ManaBar;
 #[derive(Component)]
 struct CastBar;
+#[derive(Component)]
+struct TargetIndicator;
 
 pub struct InterfacePlugin;
 
@@ -75,7 +80,8 @@ impl Plugin for InterfacePlugin {
             .add_system(update_bar_indicator_system::<Mana, ManaBar>)
             .add_system(update_bar_text_system::<CastAbility, CastBar>)
             .add_system(update_bar_indicator_system::<CastAbility, CastBar>)
-            .add_system(update_cast_bar_visibility_system);
+            .add_system(update_cast_bar_visibility_system)
+            .add_system(handle_player_target_changed_system);
     }
 }
 
@@ -191,6 +197,34 @@ fn update_cast_bar_visibility_system(
         };
 
         bar_child_visibility.is_visible = is_casting;
+    }
+}
+
+fn handle_player_target_changed_system(
+    mut commands: Commands,
+    texture_atlases: Res<Assets<TextureAtlas>>,
+    mut player_target_changed_event_reader: EventReader<PlayerTargetChanged>,
+    target_indicator_query: Query<Entity, With<TargetIndicator>>,
+) {
+    if let Some(player_target_changed) = player_target_changed_event_reader.iter().last() {
+        for target_indicator_entity in target_indicator_query.iter() {
+            commands.entity(target_indicator_entity).despawn();
+        }
+
+        if let Some(target_entity) = player_target_changed.target_entity {
+            let target_indicator_entity = commands
+                .spawn_bundle(SpriteSheetBundle {
+                    texture_atlas: texture_atlases.get_handle(crate::Sprite::SHEET_PATH),
+                    sprite: TextureAtlasSprite::new(crate::Sprite::TargetIndicator.index()),
+                    ..Default::default()
+                })
+                .insert(TargetIndicator)
+                .id();
+
+            commands
+                .entity(target_entity)
+                .add_child(target_indicator_entity);
+        }
     }
 }
 
