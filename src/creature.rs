@@ -9,8 +9,12 @@ use bevy::prelude::*;
 
 pub const CREATURE_SPEED: f32 = 60.0;
 
+#[derive(Component)]
+pub struct Creature;
+
 #[derive(Bundle)]
 pub struct CreatureBundle {
+    creature: Creature,
     health: Health,
     mana: Mana,
     critical: Critical,
@@ -22,6 +26,7 @@ pub struct CreatureBundle {
 impl CreatureBundle {
     pub fn new(health_points: u16, mana_points: u16) -> Self {
         Self {
+            creature: Creature,
             health: Health::new(health_points),
             mana: Mana::new(mana_points),
             critical: Critical::default(),

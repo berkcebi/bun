@@ -1,12 +1,15 @@
 use crate::{
     ability::{Ability, TryAbility},
-    creature::CreatureBundle,
+    creature::{Creature, CreatureBundle},
     effect::{Effect, LastingEffect, MomentaryEffect, MomentaryEffectSchedule},
     position::ChangePosition,
     sprite::Sprite,
     target::Target,
+    CAMERA_SCALE, WINDOW_HEIGHT, WINDOW_WIDTH,
 };
 use bevy::prelude::*;
+
+const DISTANCE_LIMIT: f32 = 75.0;
 
 #[derive(Component)]
 pub struct Player;
@@ -16,7 +19,8 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(spawn_system)
-            .add_system(handle_keyboard_input_system);
+            .add_system(handle_keyboard_input_system)
+            .add_system(handle_cursor_moved_system);
     }
 }
 
@@ -128,5 +132,45 @@ fn handle_keyboard_input_system(
             },
             target: target.entity,
         });
+    }
+}
+
+fn handle_cursor_moved_system(
+    mut cursor_moved_events: EventReader<CursorMoved>,
+    creature_query: Query<(Entity, &Transform), With<Creature>>,
+    mut player_query: Query<&mut Target, With<Player>>,
+) {
+    for cursor_moved in cursor_moved_events.iter() {
+        let cursor_position = cursor_moved.position;
+        let cursor_position_matrix = cursor_position.extend(0.0).extend(1.0);
+
+        // TODO: Calcuate based on camera's actual transform, in case it's transformed down the line.
+        let camera_transform = Transform::default()
+            .with_translation(Vec3::new(WINDOW_WIDTH, WINDOW_HEIGHT, 0.0) / -2.0 * CAMERA_SCALE)
+            .with_scale(Vec2::splat(CAMERA_SCALE).extend(1.0));
+        let adjusted_cursor_position_matrix =
+            camera_transform.compute_matrix() * cursor_position_matrix;
+        let adjusted_cursor_position = adjusted_cursor_position_matrix.truncate().truncate();
+
+        let closest_creature_entity = creature_query
+            .iter()
+            .fold(None, |closest_entity, (entity, transform)| {
+                let position = transform.translation.truncate();
+                let distance = position.distance(adjusted_cursor_position);
+
+                match closest_entity {
+                    None if distance < DISTANCE_LIMIT => Some((entity, distance)),
+                    Some((_, previous_distance)) if distance < previous_distance => {
+                        Some((entity, distance))
+                    }
+                    _ => closest_entity,
+                }
+            })
+            .map(|(entity, _)| entity);
+
+        let mut player_target = player_query.single_mut();
+        if player_target.entity != closest_creature_entity {
+            player_target.entity = closest_creature_entity;
+        }
     }
 }
