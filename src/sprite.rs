@@ -2,6 +2,7 @@
 pub enum Sprite {
     Player = 0,
     Goblin = 1,
+    TargetIndicator = 2,
 }
 
 impl Sprite {
