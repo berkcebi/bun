@@ -147,41 +147,44 @@ fn handle_cursor_moved_system(
     creature_query: Query<(Entity, &Transform), With<Creature>>,
     mut player_query: Query<&mut Target, With<Player>>,
 ) {
-    if let Some(cursor_moved) = cursor_moved_event_reader.iter().last() {
-        let cursor_position = cursor_moved.position;
-        let cursor_position_matrix = cursor_position.extend(0.0).extend(1.0);
+    let cursor_moved = match cursor_moved_event_reader.iter().last() {
+        Some(result) => result,
+        None => return,
+    };
 
-        // TODO: Calcuate based on camera's actual transform, in case it's transformed down the line.
-        let camera_transform = Transform::default()
-            .with_translation(Vec3::new(WINDOW_WIDTH, WINDOW_HEIGHT, 0.0) / -2.0 * CAMERA_SCALE)
-            .with_scale(Vec2::splat(CAMERA_SCALE).extend(1.0));
-        let adjusted_cursor_position_matrix =
-            camera_transform.compute_matrix() * cursor_position_matrix;
-        let adjusted_cursor_position = adjusted_cursor_position_matrix.truncate().truncate();
+    let cursor_position = cursor_moved.position;
+    let cursor_position_matrix = cursor_position.extend(0.0).extend(1.0);
 
-        let closest_creature_entity = creature_query
-            .iter()
-            .fold(None, |closest_entity, (entity, transform)| {
-                let position = transform.translation.truncate();
-                let distance = position.distance(adjusted_cursor_position);
+    // TODO: Calcuate based on camera's actual transform, in case it's transformed down the line.
+    let camera_transform = Transform::default()
+        .with_translation(Vec3::new(WINDOW_WIDTH, WINDOW_HEIGHT, 0.0) / -2.0 * CAMERA_SCALE)
+        .with_scale(Vec2::splat(CAMERA_SCALE).extend(1.0));
+    let adjusted_cursor_position_matrix =
+        camera_transform.compute_matrix() * cursor_position_matrix;
+    let adjusted_cursor_position = adjusted_cursor_position_matrix.truncate().truncate();
 
-                match closest_entity {
-                    None if distance < DISTANCE_LIMIT => Some((entity, distance)),
-                    Some((_, previous_distance)) if distance < previous_distance => {
-                        Some((entity, distance))
-                    }
-                    _ => closest_entity,
+    let closest_creature_entity = creature_query
+        .iter()
+        .fold(None, |closest_entity, (entity, transform)| {
+            let position = transform.translation.truncate();
+            let distance = position.distance(adjusted_cursor_position);
+
+            match closest_entity {
+                None if distance < DISTANCE_LIMIT => Some((entity, distance)),
+                Some((_, previous_distance)) if distance < previous_distance => {
+                    Some((entity, distance))
                 }
-            })
-            .map(|(entity, _)| entity);
+                _ => closest_entity,
+            }
+        })
+        .map(|(entity, _)| entity);
 
-        let mut player_target = player_query.single_mut();
-        if player_target.entity != closest_creature_entity {
-            player_target.entity = closest_creature_entity;
+    let mut player_target = player_query.single_mut();
+    if player_target.entity != closest_creature_entity {
+        player_target.entity = closest_creature_entity;
 
-            player_target_changed_event_writer.send(PlayerTargetChanged {
-                target_entity: player_target.entity,
-            });
-        }
+        player_target_changed_event_writer.send(PlayerTargetChanged {
+            target_entity: player_target.entity,
+        });
     }
 }

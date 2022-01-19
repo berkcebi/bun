@@ -206,26 +206,32 @@ fn handle_player_target_changed_system(
     mut player_target_changed_event_reader: EventReader<PlayerTargetChanged>,
     target_indicator_query: Query<Entity, With<TargetIndicator>>,
 ) {
-    if let Some(player_target_changed) = player_target_changed_event_reader.iter().last() {
-        for target_indicator_entity in target_indicator_query.iter() {
-            commands.entity(target_indicator_entity).despawn();
-        }
+    let player_target_changed = match player_target_changed_event_reader.iter().last() {
+        Some(result) => result,
+        None => return,
+    };
 
-        if let Some(target_entity) = player_target_changed.target_entity {
-            let target_indicator_entity = commands
-                .spawn_bundle(SpriteSheetBundle {
-                    texture_atlas: texture_atlases.get_handle(crate::Sprite::SHEET_PATH),
-                    sprite: TextureAtlasSprite::new(crate::Sprite::TargetIndicator.index()),
-                    ..Default::default()
-                })
-                .insert(TargetIndicator)
-                .id();
-
-            commands
-                .entity(target_entity)
-                .add_child(target_indicator_entity);
-        }
+    for target_indicator_entity in target_indicator_query.iter() {
+        commands.entity(target_indicator_entity).despawn();
     }
+
+    let target_entity = match player_target_changed.target_entity {
+        Some(result) => result,
+        None => return,
+    };
+
+    let target_indicator_entity = commands
+        .spawn_bundle(SpriteSheetBundle {
+            texture_atlas: texture_atlases.get_handle(crate::Sprite::SHEET_PATH),
+            sprite: TextureAtlasSprite::new(crate::Sprite::TargetIndicator.index()),
+            ..Default::default()
+        })
+        .insert(TargetIndicator)
+        .id();
+
+    commands
+        .entity(target_entity)
+        .add_child(target_indicator_entity);
 }
 
 fn spawn_bar<T: Component>(
