@@ -9,7 +9,7 @@ use crate::{
 };
 use bevy::prelude::*;
 
-const DISTANCE_LIMIT: f32 = 75.0;
+const DISTANCE_LIMIT: f32 = 40.0;
 
 /// Event to communicate player target changing.
 pub struct PlayerTargetChanged {
