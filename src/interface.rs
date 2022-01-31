@@ -30,7 +30,7 @@ const CAST_BAR_COLOR: Color = Color::rgb(1.0, 240.0 / 255.0, 0.0);
 
 trait Progressive {
     fn get_progress(&self) -> f32;
-    fn get_description(&self) -> String;
+    fn get_progress_description(&self) -> String;
 }
 
 impl Progressive for Health {
@@ -38,7 +38,7 @@ impl Progressive for Health {
         self.points as f32 / self.max_points as f32
     }
 
-    fn get_description(&self) -> String {
+    fn get_progress_description(&self) -> String {
         format!("{}/{}", self.points, self.max_points)
     }
 }
@@ -48,7 +48,7 @@ impl Progressive for Mana {
         self.points as f32 / self.max_points as f32
     }
 
-    fn get_description(&self) -> String {
+    fn get_progress_description(&self) -> String {
         format!("{}/{}", self.points, self.max_points)
     }
 }
@@ -58,7 +58,7 @@ impl Progressive for CastAbility {
         self.duration_timer.percent()
     }
 
-    fn get_description(&self) -> String {
+    fn get_progress_description(&self) -> String {
         self.ability.name.to_string()
     }
 }
@@ -212,7 +212,7 @@ fn update_bar_text_system<T: Bar>(
                 Err(_) => continue,
             };
 
-            bar_text.sections[0].value = progressive.get_description();
+            bar_text.sections[0].value = progressive.get_progress_description();
         }
     }
 }
