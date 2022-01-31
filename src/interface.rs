@@ -1,5 +1,6 @@
 use crate::{
     ability::CastAbility,
+    enemy::Enemy,
     health::Health,
     mana::Mana,
     player::{Player, PlayerTargetChanged},
@@ -12,10 +13,12 @@ const HEIGHT: f32 = WINDOW_HEIGHT * CAMERA_SCALE;
 
 const TRANSLATION_Z: f32 = 50.0;
 
-const BAR_WIDTH_SMALL: f32 = 96.0;
-const BAR_WIDTH_LARGE: f32 = 144.0;
-const BAR_HEIGHT: f32 = 16.0;
-const BAR_MARGIN: f32 = 16.0;
+const PLAYER_BAR_WIDTH: f32 = 96.0;
+const PLAYER_CAST_BAR_WIDTH: f32 = 144.0;
+const PLAYER_BAR_HEIGHT: f32 = 16.0;
+const ENEMY_BAR_HEIGHT: f32 = 4.0;
+const PLAYER_BAR_MARGIN: f32 = 16.0;
+const ENEMY_BAR_MARGIN: f32 = 1.0;
 const BAR_BACKGROUND_COLOR_ALPHA: f32 = 0.25;
 const BAR_TEXT_FONT_PATH: &str = "fonts/04b03.ttf";
 const BAR_TEXT_FONT_SIZE: f32 = 12.0;
@@ -25,7 +28,7 @@ const HEALTH_BAR_COLOR: Color = Color::rgb(231.0 / 255.0, 39.0 / 255.0, 37.0 / 2
 const MANA_BAR_COLOR: Color = Color::rgb(43.0 / 255.0, 102.0 / 255.0, 201.0 / 255.0);
 const CAST_BAR_COLOR: Color = Color::rgb(1.0, 240.0 / 255.0, 0.0);
 
-trait Progressive: Component {
+trait Progressive {
     fn get_progress(&self) -> f32;
     fn get_description(&self) -> String;
 }
@@ -60,20 +63,52 @@ impl Progressive for CastAbility {
     }
 }
 
+trait Bar {
+    fn entity(&self) -> Entity;
+}
+
+impl Bar for HealthBar {
+    fn entity(&self) -> Entity {
+        self.entity
+    }
+}
+
+impl Bar for ManaBar {
+    fn entity(&self) -> Entity {
+        self.entity
+    }
+}
+
+impl Bar for CastBar {
+    fn entity(&self) -> Entity {
+        self.entity
+    }
+}
+
 #[derive(Component)]
-struct HealthBar;
+struct HealthBar {
+    entity: Entity,
+}
+
 #[derive(Component)]
-struct ManaBar;
+struct ManaBar {
+    entity: Entity,
+}
+
 #[derive(Component)]
-struct CastBar;
+struct CastBar {
+    entity: Entity,
+}
+
 #[derive(Component)]
-struct TargetIndicator;
+struct PlayerTargetIndicator;
 
 pub struct InterfacePlugin;
 
 impl Plugin for InterfacePlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup)
+        app.add_system(add_player_bars_system)
+            .add_system(add_enemy_health_bars_system)
             .add_system(update_bar_text_system::<Health, HealthBar>)
             .add_system(update_bar_indicator_system::<Health, HealthBar>)
             .add_system(update_bar_text_system::<Mana, ManaBar>)
@@ -85,118 +120,148 @@ impl Plugin for InterfacePlugin {
     }
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn add_player_bars_system(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    query: Query<Entity, Added<Player>>,
+) {
+    let entity = match query.get_single() {
+        Ok(result) => result,
+        Err(_) => return,
+    };
+
     let bar_text_font = asset_server.load(BAR_TEXT_FONT_PATH);
 
     spawn_bar(
         HEALTH_BAR_COLOR,
         Vec3::new(
-            WIDTH * -0.5 + BAR_WIDTH_SMALL * 0.5 + BAR_MARGIN,
-            HEIGHT * 0.5 - BAR_HEIGHT * 0.5 - BAR_MARGIN,
+            WIDTH * -0.5 + PLAYER_BAR_WIDTH * 0.5 + PLAYER_BAR_MARGIN,
+            HEIGHT * 0.5 - PLAYER_BAR_HEIGHT * 0.5 - PLAYER_BAR_MARGIN,
             TRANSLATION_Z,
         ),
-        BAR_WIDTH_SMALL,
-        HealthBar,
+        Vec2::new(PLAYER_BAR_WIDTH, PLAYER_BAR_HEIGHT),
+        HealthBar { entity },
         &mut commands,
-        bar_text_font.clone(),
+        Some(bar_text_font.clone()),
     );
 
     spawn_bar(
         MANA_BAR_COLOR,
         Vec3::new(
-            WIDTH * -0.5 + BAR_WIDTH_SMALL * 0.5 + BAR_MARGIN,
-            HEIGHT * 0.5 - BAR_HEIGHT * 1.5 - BAR_MARGIN * 1.5,
+            WIDTH * -0.5 + PLAYER_BAR_WIDTH * 0.5 + PLAYER_BAR_MARGIN,
+            HEIGHT * 0.5 - PLAYER_BAR_HEIGHT * 1.5 - PLAYER_BAR_MARGIN * 1.5,
             TRANSLATION_Z,
         ),
-        BAR_WIDTH_SMALL,
-        ManaBar,
+        Vec2::new(PLAYER_BAR_WIDTH, PLAYER_BAR_HEIGHT),
+        ManaBar { entity },
         &mut commands,
-        bar_text_font.clone(),
+        Some(bar_text_font.clone()),
     );
 
     spawn_bar(
         CAST_BAR_COLOR,
         Vec3::new(0.0, HEIGHT / -4.0, TRANSLATION_Z),
-        BAR_WIDTH_LARGE,
-        CastBar,
+        Vec2::new(PLAYER_CAST_BAR_WIDTH, PLAYER_BAR_HEIGHT),
+        CastBar { entity },
         &mut commands,
-        bar_text_font,
+        Some(bar_text_font),
     );
 }
 
-fn update_bar_text_system<T: Progressive, U: Component>(
-    bar_children_query: Query<&Children, With<U>>,
-    mut bar_children_text_query: Query<&mut Text>,
-    progressive_query: Query<&T, With<Player>>,
-) {
-    let progressive = match progressive_query.get_single() {
-        Ok(result) => result,
-        Err(_) => return,
-    };
+fn add_enemy_health_bars_system(mut commands: Commands, query: Query<Entity, Added<Enemy>>) {
+    for entity in query.iter() {
+        let health_bar_entity = spawn_bar(
+            HEALTH_BAR_COLOR,
+            Vec3::new(
+                0.0,
+                (crate::Sprite::SIZE + ENEMY_BAR_HEIGHT) / 2.0 + ENEMY_BAR_MARGIN,
+                TRANSLATION_Z,
+            ),
+            Vec2::new(crate::Sprite::SIZE, ENEMY_BAR_HEIGHT),
+            HealthBar { entity },
+            &mut commands,
+            None,
+        );
 
-    let bar_children = bar_children_query.single();
-    for &bar_child in bar_children.iter() {
-        let mut bar_text = match bar_children_text_query.get_mut(bar_child) {
+        commands.entity(entity).add_child(health_bar_entity);
+    }
+}
+
+fn update_bar_text_system<T: Component + Progressive, U: Component + Bar>(
+    bar_query: Query<(&Children, &U)>,
+    mut bar_children_text_query: Query<&mut Text>,
+    progressive_query: Query<&T>,
+) {
+    for (bar_children, bar) in bar_query.iter() {
+        let progressive = match progressive_query.get(bar.entity()) {
             Ok(result) => result,
             Err(_) => continue,
         };
 
-        bar_text.sections[0].value = progressive.get_description();
-    }
-}
-
-fn update_bar_indicator_system<T: Progressive, U: Component>(
-    bar_query: Query<(&Children, &Sprite), With<U>>,
-    mut bar_child_indicator_query: Query<(&mut Sprite, &mut Transform), Without<U>>,
-    progressive_query: Query<&T, With<Player>>,
-) {
-    let progressive = match progressive_query.get_single() {
-        Ok(result) => result,
-        Err(_) => return,
-    };
-
-    let (bar_children, bar_sprite) = bar_query.single();
-    for &bar_child in bar_children.iter() {
-        let (mut bar_indicator_sprite, mut bar_indicator_transform) =
-            match bar_child_indicator_query.get_mut(bar_child) {
+        for &bar_child in bar_children.iter() {
+            let mut bar_text = match bar_children_text_query.get_mut(bar_child) {
                 Ok(result) => result,
                 Err(_) => continue,
             };
 
-        let bar_width = bar_sprite.custom_size.unwrap().x;
-        let bar_indicator_height = bar_indicator_sprite.custom_size.unwrap().y;
-
-        let bar_indicator_width = (bar_width * progressive.get_progress()).round();
-        bar_indicator_sprite.custom_size =
-            Some(Vec2::new(bar_indicator_width, bar_indicator_height));
-        bar_indicator_transform.translation.x = bar_width * -0.5 + bar_indicator_width / 2.0;
+            bar_text.sections[0].value = progressive.get_description();
+        }
     }
 }
 
-fn update_cast_bar_visibility_system(
-    mut bar_query: Query<(&Children, &mut Visibility), With<CastBar>>,
-    mut bar_child_visibility_query: Query<&mut Visibility, Without<CastBar>>,
-    cast_ability_query: Query<&CastAbility, With<Player>>,
+fn update_bar_indicator_system<T: Component + Progressive, U: Component + Bar>(
+    bar_query: Query<(&Children, &Sprite, &U)>,
+    mut bar_child_indicator_query: Query<(&mut Sprite, &mut Transform), Without<U>>,
+    progressive_query: Query<&T>,
 ) {
-    let is_casting = match cast_ability_query.get_single() {
-        Ok(cast_ability) => {
-            cast_ability.duration_timer.elapsed_secs() > 0.0
-                && !cast_ability.duration_timer.finished()
-        }
-        Err(_) => false,
-    };
-
-    let (bar_children, mut bar_visibility) = bar_query.single_mut();
-
-    bar_visibility.is_visible = is_casting;
-
-    for &bar_child in bar_children.iter() {
-        let mut bar_child_visibility = match bar_child_visibility_query.get_mut(bar_child) {
+    for (bar_children, bar_sprite, bar) in bar_query.iter() {
+        let progressive = match progressive_query.get(bar.entity()) {
             Ok(result) => result,
             Err(_) => continue,
         };
 
-        bar_child_visibility.is_visible = is_casting;
+        for &bar_child in bar_children.iter() {
+            let (mut bar_indicator_sprite, mut bar_indicator_transform) =
+                match bar_child_indicator_query.get_mut(bar_child) {
+                    Ok(result) => result,
+                    Err(_) => continue,
+                };
+
+            let bar_width = bar_sprite.custom_size.unwrap().x;
+            let bar_indicator_height = bar_indicator_sprite.custom_size.unwrap().y;
+
+            let bar_indicator_width = (bar_width * progressive.get_progress()).round();
+            bar_indicator_sprite.custom_size =
+                Some(Vec2::new(bar_indicator_width, bar_indicator_height));
+            bar_indicator_transform.translation.x = bar_width * -0.5 + bar_indicator_width / 2.0;
+        }
+    }
+}
+
+fn update_cast_bar_visibility_system(
+    mut bar_query: Query<(&Children, &mut Visibility, &CastBar)>,
+    mut bar_child_visibility_query: Query<&mut Visibility, Without<CastBar>>,
+    cast_ability_query: Query<&CastAbility>,
+) {
+    for (bar_children, mut bar_visibility, bar) in bar_query.iter_mut() {
+        let is_casting = match cast_ability_query.get(bar.entity()) {
+            Ok(cast_ability) => {
+                cast_ability.duration_timer.elapsed_secs() > 0.0
+                    && !cast_ability.duration_timer.finished()
+            }
+            Err(_) => false,
+        };
+
+        bar_visibility.is_visible = is_casting;
+
+        for &bar_child in bar_children.iter() {
+            let mut bar_child_visibility = match bar_child_visibility_query.get_mut(bar_child) {
+                Ok(result) => result,
+                Err(_) => continue,
+            };
+
+            bar_child_visibility.is_visible = is_casting;
+        }
     }
 }
 
@@ -204,15 +269,15 @@ fn handle_player_target_changed_system(
     mut commands: Commands,
     texture_atlases: Res<Assets<TextureAtlas>>,
     mut player_target_changed_event_reader: EventReader<PlayerTargetChanged>,
-    target_indicator_query: Query<Entity, With<TargetIndicator>>,
+    player_target_indicator_query: Query<Entity, With<PlayerTargetIndicator>>,
 ) {
     let player_target_changed = match player_target_changed_event_reader.iter().last() {
         Some(result) => result,
         None => return,
     };
 
-    for target_indicator_entity in target_indicator_query.iter() {
-        commands.entity(target_indicator_entity).despawn();
+    for player_target_indicator_entity in player_target_indicator_query.iter() {
+        commands.entity(player_target_indicator_entity).despawn();
     }
 
     let target_entity = match player_target_changed.target_entity {
@@ -220,35 +285,35 @@ fn handle_player_target_changed_system(
         None => return,
     };
 
-    let target_indicator_entity = commands
+    let player_target_indicator_entity = commands
         .spawn_bundle(SpriteSheetBundle {
             texture_atlas: texture_atlases.get_handle(crate::Sprite::SHEET_PATH),
             sprite: TextureAtlasSprite::new(crate::Sprite::TargetIndicator.index()),
             ..Default::default()
         })
-        .insert(TargetIndicator)
+        .insert(PlayerTargetIndicator)
         .id();
 
     commands
         .entity(target_entity)
-        .add_child(target_indicator_entity);
+        .add_child(player_target_indicator_entity);
 }
 
 fn spawn_bar<T: Component>(
     color: Color,
     translation: Vec3,
-    width: f32,
+    size: Vec2,
     component: T,
     commands: &mut Commands,
-    bar_text_font_handle: Handle<Font>,
-) {
+    bar_text_font_handle: Option<Handle<Font>>,
+) -> Entity {
     let mut bar_background_color = color;
     bar_background_color.set_a(BAR_BACKGROUND_COLOR_ALPHA);
 
     commands
         .spawn_bundle(SpriteBundle {
             sprite: Sprite {
-                custom_size: Some(Vec2::new(width, BAR_HEIGHT)),
+                custom_size: Some(size),
                 color: bar_background_color,
                 ..Default::default()
             },
@@ -259,31 +324,34 @@ fn spawn_bar<T: Component>(
         .with_children(|parent| {
             parent.spawn_bundle(SpriteBundle {
                 sprite: Sprite {
-                    custom_size: Some(Vec2::new(0.0, BAR_HEIGHT)),
+                    custom_size: Some(Vec2::new(0.0, size.y)),
                     color,
                     ..Default::default()
                 },
                 ..Default::default()
             });
 
-            let text_style = TextStyle {
-                font: bar_text_font_handle.clone(),
-                font_size: BAR_TEXT_FONT_SIZE,
-                color: Color::WHITE,
-            };
-            let text_alignment = TextAlignment {
-                vertical: VerticalAlign::Center,
-                horizontal: HorizontalAlign::Center,
-            };
+            if let Some(bar_text_font_handle) = bar_text_font_handle {
+                let text_style = TextStyle {
+                    font: bar_text_font_handle.clone(),
+                    font_size: BAR_TEXT_FONT_SIZE,
+                    color: Color::WHITE,
+                };
+                let text_alignment = TextAlignment {
+                    vertical: VerticalAlign::Center,
+                    horizontal: HorizontalAlign::Center,
+                };
 
-            parent.spawn_bundle(Text2dBundle {
-                text: Text::with_section("", text_style, text_alignment),
-                transform: Transform::from_translation(Vec3::new(
-                    0.0,
-                    BAR_TEXT_VERTICAL_OFFSET,
-                    1.0,
-                )),
-                ..Default::default()
-            });
-        });
+                parent.spawn_bundle(Text2dBundle {
+                    text: Text::with_section("", text_style, text_alignment),
+                    transform: Transform::from_translation(Vec3::new(
+                        0.0,
+                        BAR_TEXT_VERTICAL_OFFSET,
+                        1.0,
+                    )),
+                    ..Default::default()
+                });
+            }
+        })
+        .id()
 }
