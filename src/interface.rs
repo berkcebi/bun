@@ -63,23 +63,31 @@ impl Progressive for CastAbility {
     }
 }
 
-trait Bar {
+trait Bar: Component {
+    type Type: Component + Progressive;
+
     fn entity(&self) -> Entity;
 }
 
 impl Bar for HealthBar {
+    type Type = Health;
+
     fn entity(&self) -> Entity {
         self.entity
     }
 }
 
 impl Bar for ManaBar {
+    type Type = Mana;
+
     fn entity(&self) -> Entity {
         self.entity
     }
 }
 
 impl Bar for CastBar {
+    type Type = CastAbility;
+
     fn entity(&self) -> Entity {
         self.entity
     }
@@ -109,12 +117,12 @@ impl Plugin for InterfacePlugin {
     fn build(&self, app: &mut App) {
         app.add_system(add_player_bars_system)
             .add_system(add_enemy_health_bars_system)
-            .add_system(update_bar_text_system::<Health, HealthBar>)
-            .add_system(update_bar_indicator_system::<Health, HealthBar>)
-            .add_system(update_bar_text_system::<Mana, ManaBar>)
-            .add_system(update_bar_indicator_system::<Mana, ManaBar>)
-            .add_system(update_bar_text_system::<CastAbility, CastBar>)
-            .add_system(update_bar_indicator_system::<CastAbility, CastBar>)
+            .add_system(update_bar_text_system::<HealthBar>)
+            .add_system(update_bar_indicator_system::<HealthBar>)
+            .add_system(update_bar_text_system::<ManaBar>)
+            .add_system(update_bar_indicator_system::<ManaBar>)
+            .add_system(update_bar_text_system::<CastBar>)
+            .add_system(update_bar_indicator_system::<CastBar>)
             .add_system(update_cast_bar_visibility_system)
             .add_system(handle_player_target_changed_system);
     }
@@ -187,10 +195,10 @@ fn add_enemy_health_bars_system(mut commands: Commands, query: Query<Entity, Add
     }
 }
 
-fn update_bar_text_system<T: Component + Progressive, U: Component + Bar>(
-    bar_query: Query<(&Children, &U)>,
+fn update_bar_text_system<T: Bar>(
+    bar_query: Query<(&Children, &T)>,
     mut bar_children_text_query: Query<&mut Text>,
-    progressive_query: Query<&T>,
+    progressive_query: Query<&T::Type>,
 ) {
     for (bar_children, bar) in bar_query.iter() {
         let progressive = match progressive_query.get(bar.entity()) {
@@ -209,10 +217,10 @@ fn update_bar_text_system<T: Component + Progressive, U: Component + Bar>(
     }
 }
 
-fn update_bar_indicator_system<T: Component + Progressive, U: Component + Bar>(
-    bar_query: Query<(&Children, &Sprite, &U)>,
-    mut bar_child_indicator_query: Query<(&mut Sprite, &mut Transform), Without<U>>,
-    progressive_query: Query<&T>,
+fn update_bar_indicator_system<T: Bar>(
+    bar_query: Query<(&Children, &Sprite, &T)>,
+    mut bar_child_indicator_query: Query<(&mut Sprite, &mut Transform), Without<T>>,
+    progressive_query: Query<&T::Type>,
 ) {
     for (bar_children, bar_sprite, bar) in bar_query.iter() {
         let progressive = match progressive_query.get(bar.entity()) {
