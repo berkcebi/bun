@@ -12,6 +12,7 @@ pub struct Ability {
     pub name: &'static str,
     pub mana_points: u16,
     pub cast_duration: f32,
+    pub range: f32,
     pub effect: Effect,
     pub secondary_effect: Option<Effect>,
 }
@@ -97,10 +98,12 @@ fn try_ability_system(
     mut query: Query<(
         &Mana,
         &LastingEffects,
+        &Transform,
         Option<&CastAbility>,
         Option<&AbilityCooldown>,
         Option<&ChangingPosition>,
     )>,
+    target_query: Query<&Transform>,
 ) {
     for try_ability in try_ability_event_reader.iter() {
         let target = match try_ability.target {
@@ -112,7 +115,7 @@ fn try_ability_system(
             }
         };
 
-        let (mana, lasting_effects, cast_ability, ability_cooldown, changing_position) =
+        let (mana, lasting_effects, transform, cast_ability, ability_cooldown, changing_position) =
             query.get_mut(try_ability.source).unwrap();
 
         if cast_ability.is_some() {
@@ -145,6 +148,17 @@ fn try_ability_system(
 
         if try_ability.ability.mana_points > mana.points {
             info!("Not enough mana.");
+
+            continue;
+        }
+
+        let position = transform.translation.truncate();
+
+        let target_transform = target_query.get(target).unwrap();
+        let target_position = target_transform.translation.truncate();
+
+        if position.distance(target_position) > try_ability.ability.range {
+            info!("Out of range.");
 
             continue;
         }
@@ -201,6 +215,8 @@ fn perform_ability_system(
     mut query: Query<&mut Mana>,
 ) {
     for perform_ability in perform_ability_event_reader.iter() {
+        // TODO: Validate range in case the target moves while casting.
+
         let mut mana = query.get_mut(perform_ability.source).unwrap();
 
         mana.points -= perform_ability.ability.mana_points;

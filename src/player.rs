@@ -79,6 +79,7 @@ fn handle_keyboard_input_system(
                 name: "Fireball",
                 mana_points: 20,
                 cast_duration: 2.5,
+                range: 200.0,
                 effect: Effect::Momentary(
                     MomentaryEffect::LoseHealth(30, 50),
                     MomentaryEffectSchedule::Once,
@@ -99,6 +100,7 @@ fn handle_keyboard_input_system(
                 name: "Fire Blast",
                 mana_points: 15,
                 cast_duration: 0.0,
+                range: 125.0,
                 effect: Effect::Momentary(
                     MomentaryEffect::LoseHealth(20, 30),
                     MomentaryEffectSchedule::Once,
@@ -116,6 +118,7 @@ fn handle_keyboard_input_system(
                 name: "Lesser Heal",
                 mana_points: 15,
                 cast_duration: 1.5,
+                range: 200.0,
                 effect: Effect::Momentary(
                     MomentaryEffect::GainHealth(40, 60),
                     MomentaryEffectSchedule::Once,
@@ -133,6 +136,7 @@ fn handle_keyboard_input_system(
                 name: "Silence",
                 mana_points: 20,
                 cast_duration: 0.0,
+                range: 200.0,
                 effect: Effect::Lasting(LastingEffect::Silence, 4.0),
                 secondary_effect: None,
             },
