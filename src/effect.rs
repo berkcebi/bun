@@ -13,8 +13,8 @@ pub enum Effect {
 
 #[derive(Clone, Copy)]
 pub enum MomentaryEffect {
-    LoseHealth(u16, u16),
-    GainHealth(u16, u16),
+    Damage(u16, u16),
+    Heal(u16, u16),
 }
 
 #[derive(Clone, Copy)]
@@ -133,7 +133,7 @@ fn perform_momentary_effect_system(
         let target = perform_momentary_effect.target;
 
         match perform_momentary_effect.effect {
-            MomentaryEffect::LoseHealth(min_points, max_points) => {
+            MomentaryEffect::Damage(min_points, max_points) => {
                 let mut health = health_query.get_mut(target).unwrap();
                 let mut points = rng.gen_range(min_points..=max_points);
 
@@ -155,7 +155,7 @@ fn perform_momentary_effect_system(
                     info!("{:?} died.", target);
                 }
             }
-            MomentaryEffect::GainHealth(min_points, max_points) => {
+            MomentaryEffect::Heal(min_points, max_points) => {
                 let mut health = health_query.get_mut(target).unwrap();
                 let mut points = rng.gen_range(min_points..=max_points);
 
