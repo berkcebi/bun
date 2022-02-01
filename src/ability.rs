@@ -152,15 +152,17 @@ fn try_ability_system(
             continue;
         }
 
-        let position = transform.translation.truncate();
+        if target != try_ability.source {
+            let position = transform.translation.truncate();
 
-        let target_transform = target_query.get(target).unwrap();
-        let target_position = target_transform.translation.truncate();
+            let target_transform = target_query.get(target).unwrap();
+            let target_position = target_transform.translation.truncate();
 
-        if position.distance(target_position) > try_ability.ability.range {
-            info!("Out of range.");
+            if position.distance(target_position) > try_ability.ability.range {
+                info!("Out of range.");
 
-            continue;
+                continue;
+            }
         }
 
         commands
