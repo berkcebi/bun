@@ -15,7 +15,7 @@ use ability::AbilityPlugin;
 use bevy::prelude::*;
 use effect::EffectPlugin;
 use enemy::EnemyPlugin;
-use interface::InterfacePlugin;
+use interface::InterfacePlugins;
 use mana::ManaPlugin;
 use player::PlayerPlugin;
 use position::PositionPlugin;
@@ -36,10 +36,10 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
+        .add_plugins(InterfacePlugins)
         .add_plugin(AbilityPlugin)
         .add_plugin(EffectPlugin)
         .add_plugin(EnemyPlugin)
-        .add_plugin(InterfacePlugin)
         .add_plugin(ManaPlugin)
         .add_plugin(PositionPlugin)
         .add_plugin(PlayerPlugin)
