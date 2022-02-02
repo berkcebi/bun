@@ -1,5 +1,6 @@
 use crate::{
     ability::CastAbility,
+    effect::{MomentaryEffectPerformed, PerformedMomentaryEffect},
     enemy::Enemy,
     health::Health,
     mana::Mana,
@@ -22,11 +23,30 @@ const ENEMY_BAR_MARGIN: f32 = 1.0;
 const BAR_BACKGROUND_COLOR_ALPHA: f32 = 0.25;
 const BAR_TEXT_FONT_PATH: &str = "fonts/04b03.ttf";
 const BAR_TEXT_FONT_SIZE: f32 = 12.0;
+const FLOATING_TEXT_FONT_SIZE: f32 = 12.0;
 const BAR_TEXT_VERTICAL_OFFSET: f32 = -0.5;
+const FLOATING_TEXT_TRANSLATION_Y: f32 = 6.0;
 
 const HEALTH_BAR_COLOR: Color = Color::rgb(231.0 / 255.0, 39.0 / 255.0, 37.0 / 255.0);
 const MANA_BAR_COLOR: Color = Color::rgb(43.0 / 255.0, 102.0 / 255.0, 201.0 / 255.0);
 const CAST_BAR_COLOR: Color = Color::rgb(1.0, 240.0 / 255.0, 0.0);
+const DAMAGE_FLOATING_TEXT_COLOR: Color = Color::rgb(231.0 / 255.0, 39.0 / 255.0, 37.0 / 255.0);
+const HEAL_FLOATING_TEXT_COLOR: Color = Color::rgb(0.0, 231.0 / 255.0, 0.0);
+
+const FLOATING_TEXT_ANIMATION_DURATION: f32 = 1.0;
+
+// TODO: Move to separate file.
+enum Easing {
+    OutQuart,
+}
+
+impl Easing {
+    fn ease(value: f32, easing: Self) -> f32 {
+        match easing {
+            Easing::OutQuart => 1.0 - (1.0 - value).powf(4.0),
+        }
+    }
+}
 
 trait Progressive {
     fn get_progress(&self) -> f32;
@@ -111,6 +131,21 @@ struct CastBar {
 #[derive(Component)]
 struct PlayerTargetIndicator;
 
+// TODO: Move to separate plugin.
+#[derive(Component)]
+struct FloatingText {
+    animation_timer: Timer,
+}
+
+impl FloatingText {
+    pub fn new() -> Self {
+        Self {
+            animation_timer: Timer::from_seconds(FLOATING_TEXT_ANIMATION_DURATION, false),
+        }
+    }
+}
+
+// TODO: Convert to plugin group.
 pub struct InterfacePlugin;
 
 impl Plugin for InterfacePlugin {
@@ -124,7 +159,9 @@ impl Plugin for InterfacePlugin {
             .add_system(update_bar_text_system::<CastBar>)
             .add_system(update_bar_indicator_system::<CastBar>)
             .add_system(update_cast_bar_visibility_system)
-            .add_system(handle_player_target_changed_system);
+            .add_system(handle_player_target_changed_system)
+            .add_system(add_floating_text_system)
+            .add_system(animate_floating_text_system);
     }
 }
 
@@ -305,6 +342,72 @@ fn handle_player_target_changed_system(
     commands
         .entity(target_entity)
         .add_child(player_target_indicator_entity);
+}
+
+fn add_floating_text_system(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut momentary_effect_performed_event_reader: EventReader<MomentaryEffectPerformed>,
+    query: Query<&Transform>,
+) {
+    for momentary_effect_performed in momentary_effect_performed_event_reader.iter() {
+        // TODO: Change animation based on critical.
+        let (points, _, color) = match momentary_effect_performed.performed_momentary_effect {
+            PerformedMomentaryEffect::Damage(points, is_critical) => {
+                (points, is_critical, DAMAGE_FLOATING_TEXT_COLOR)
+            }
+            PerformedMomentaryEffect::Heal(points, is_critical) => {
+                (points, is_critical, HEAL_FLOATING_TEXT_COLOR)
+            }
+        };
+
+        let entity_transform = query.get(momentary_effect_performed.entity).unwrap();
+        let mut transform = entity_transform.clone();
+        transform.translation.y += crate::Sprite::SIZE / 2.0 + 12.0;
+
+        let text_style = TextStyle {
+            font: asset_server.load(BAR_TEXT_FONT_PATH),
+            font_size: FLOATING_TEXT_FONT_SIZE,
+            color,
+        };
+        let text_alignment = TextAlignment {
+            vertical: VerticalAlign::Center,
+            horizontal: HorizontalAlign::Center,
+        };
+
+        commands
+            .spawn_bundle(Text2dBundle {
+                text: Text::with_section(points.to_string(), text_style, text_alignment),
+                transform,
+                ..Default::default()
+            })
+            .insert(FloatingText::new());
+    }
+}
+
+fn animate_floating_text_system(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(Entity, &mut Transform, &mut Text, &mut FloatingText)>,
+) {
+    for (entity, mut transform, mut text, mut floating_text) in query.iter_mut() {
+        let previous_translation_y = FLOATING_TEXT_TRANSLATION_Y
+            * Easing::ease(floating_text.animation_timer.percent(), Easing::OutQuart);
+        floating_text.animation_timer.tick(time.delta());
+
+        if floating_text.animation_timer.finished() {
+            commands.entity(entity).despawn();
+        } else {
+            let translation_y = FLOATING_TEXT_TRANSLATION_Y
+                * Easing::ease(floating_text.animation_timer.percent(), Easing::OutQuart);
+            transform.translation.y += translation_y - previous_translation_y;
+
+            if floating_text.animation_timer.percent() > 0.5 {
+                let color_alpha = 1.0 - (floating_text.animation_timer.percent() - 0.5) * 2.0;
+                text.sections[0].style.color.set_a(color_alpha);
+            }
+        }
+    }
 }
 
 fn spawn_bar<T: Component>(
