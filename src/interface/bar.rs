@@ -292,7 +292,7 @@ fn spawn<T: Component>(
 
             if let Some(font_handle) = font_handle {
                 let text_style = TextStyle {
-                    font: font_handle.clone(),
+                    font: font_handle,
                     font_size: FONT_SIZE,
                     color: Color::WHITE,
                 };

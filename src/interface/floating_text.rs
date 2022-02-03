@@ -50,8 +50,9 @@ fn spawn_system(
         };
 
         let entity_transform = query.get(momentary_effect_performed.entity).unwrap();
-        let mut transform = entity_transform.clone();
-        transform.translation.y += crate::Sprite::SIZE / 2.0 + 12.0;
+        let translation =
+            entity_transform.translation + Vec3::new(0.0, crate::Sprite::SIZE / 2.0 + 12.0, 0.0);
+        let transform = Transform::from_translation(translation);
 
         let text_style = TextStyle {
             font: asset_server.load(FONT_PATH),
