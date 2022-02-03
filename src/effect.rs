@@ -13,8 +13,8 @@ pub enum Effect {
 
 #[derive(Clone, Copy)]
 pub enum MomentaryEffect {
-    LoseHealth(u16, u16),
-    GainHealth(u16, u16),
+    Damage(u16, u16),
+    Heal(u16, u16),
 }
 
 #[derive(Clone, Copy)]
@@ -33,6 +33,17 @@ pub struct PerformEffect {
     pub effect: Effect,
     pub source: Entity,
     pub target: Entity,
+}
+
+pub enum PerformedMomentaryEffect {
+    Damage(u16, bool),
+    Heal(u16, bool),
+}
+
+/// Event to communicate performing momentary effect on an entity.
+pub struct MomentaryEffectPerformed {
+    pub entity: Entity,
+    pub performed_momentary_effect: PerformedMomentaryEffect,
 }
 
 /// Internal event to perform a momentary effect via a perform effect event.
@@ -72,6 +83,7 @@ pub struct EffectPlugin;
 impl Plugin for EffectPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<PerformEffect>()
+            .add_event::<MomentaryEffectPerformed>()
             .add_event::<PerformMomentaryEffect>()
             .add_system(perform_effect_system)
             .add_system(perform_momentary_effect_system)
@@ -124,6 +136,7 @@ fn perform_effect_system(
 
 fn perform_momentary_effect_system(
     mut perform_momentary_effect_event_reader: EventReader<PerformMomentaryEffect>,
+    mut momentary_effect_performed_event_writer: EventWriter<MomentaryEffectPerformed>,
     mut critical_query: Query<Option<&Critical>>,
     mut health_query: Query<&mut Health>,
 ) {
@@ -133,17 +146,20 @@ fn perform_momentary_effect_system(
         let target = perform_momentary_effect.target;
 
         match perform_momentary_effect.effect {
-            MomentaryEffect::LoseHealth(min_points, max_points) => {
+            MomentaryEffect::Damage(min_points, max_points) => {
                 let mut health = health_query.get_mut(target).unwrap();
                 let mut points = rng.gen_range(min_points..=max_points);
 
                 let critical = critical_query
                     .get_mut(perform_momentary_effect.source)
                     .unwrap();
-                if let Some(critical) = critical {
-                    if critical.percent >= rng.gen() {
-                        points *= CRITICAL_MULTIPLIER;
-                    }
+                let is_critical = match critical {
+                    Some(critical) => critical.percent >= rng.gen(),
+                    None => false,
+                };
+
+                if is_critical {
+                    points *= CRITICAL_MULTIPLIER;
                 }
 
                 if health.points > points {
@@ -154,21 +170,37 @@ fn perform_momentary_effect_system(
 
                     info!("{:?} died.", target);
                 }
+
+                momentary_effect_performed_event_writer.send(MomentaryEffectPerformed {
+                    entity: target,
+                    performed_momentary_effect: PerformedMomentaryEffect::Damage(
+                        points,
+                        is_critical,
+                    ),
+                });
             }
-            MomentaryEffect::GainHealth(min_points, max_points) => {
+            MomentaryEffect::Heal(min_points, max_points) => {
                 let mut health = health_query.get_mut(target).unwrap();
                 let mut points = rng.gen_range(min_points..=max_points);
 
                 let critical = critical_query
                     .get_mut(perform_momentary_effect.source)
                     .unwrap();
-                if let Some(critical) = critical {
-                    if critical.percent >= rng.gen() {
-                        points *= CRITICAL_MULTIPLIER;
-                    }
+                let is_critical = match critical {
+                    Some(critical) => critical.percent >= rng.gen(),
+                    None => false,
+                };
+
+                if is_critical {
+                    points *= CRITICAL_MULTIPLIER;
                 }
 
                 health.points = (health.points + points).min(health.max_points);
+
+                momentary_effect_performed_event_writer.send(MomentaryEffectPerformed {
+                    entity: target,
+                    performed_momentary_effect: PerformedMomentaryEffect::Heal(points, is_critical),
+                });
             }
         }
     }

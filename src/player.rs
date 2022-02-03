@@ -81,11 +81,11 @@ fn handle_keyboard_input_system(
                 cast_duration: 2.5,
                 range: 200.0,
                 effect: Effect::Momentary(
-                    MomentaryEffect::LoseHealth(30, 50),
+                    MomentaryEffect::Damage(30, 50),
                     MomentaryEffectSchedule::Once,
                 ),
                 secondary_effect: Some(Effect::Momentary(
-                    MomentaryEffect::LoseHealth(2, 3),
+                    MomentaryEffect::Damage(2, 3),
                     MomentaryEffectSchedule::Periodic(3.0, 12.0),
                 )),
             },
@@ -102,7 +102,7 @@ fn handle_keyboard_input_system(
                 cast_duration: 0.0,
                 range: 125.0,
                 effect: Effect::Momentary(
-                    MomentaryEffect::LoseHealth(20, 30),
+                    MomentaryEffect::Damage(20, 30),
                     MomentaryEffectSchedule::Once,
                 ),
                 secondary_effect: None,
@@ -120,7 +120,7 @@ fn handle_keyboard_input_system(
                 cast_duration: 1.5,
                 range: 200.0,
                 effect: Effect::Momentary(
-                    MomentaryEffect::GainHealth(40, 60),
+                    MomentaryEffect::Heal(40, 60),
                     MomentaryEffectSchedule::Once,
                 ),
                 secondary_effect: None,
