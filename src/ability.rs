@@ -2,6 +2,7 @@ use crate::{
     effect::{Effect, LastingEffect, LastingEffects, PerformEffect},
     mana::{Mana, RegenManaCooldown},
     position::ChangingPosition,
+    AppState,
 };
 use bevy::prelude::*;
 
@@ -69,10 +70,13 @@ impl Plugin for AbilityPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<TryAbility>()
             .add_event::<PerformAbility>()
-            .add_system(remove_ability_cooldown_system)
-            .add_system(try_ability_system)
-            .add_system(cast_ability_system)
-            .add_system(perform_ability_system);
+            .add_system_set(
+                SystemSet::on_update(AppState::Game)
+                    .with_system(remove_ability_cooldown_system)
+                    .with_system(try_ability_system)
+                    .with_system(cast_ability_system)
+                    .with_system(perform_ability_system),
+            );
     }
 }
 

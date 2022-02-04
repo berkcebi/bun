@@ -1,4 +1,4 @@
-use crate::creature::CREATURE_SPEED;
+use crate::{creature::CREATURE_SPEED, AppState};
 use bevy::prelude::*;
 
 /// Event to change position towards a direction.
@@ -15,8 +15,9 @@ pub struct PositionPlugin;
 
 impl Plugin for PositionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<ChangePosition>()
-            .add_system(change_position_system);
+        app.add_event::<ChangePosition>().add_system_set(
+            SystemSet::on_update(AppState::Game).with_system(change_position_system),
+        );
     }
 }
 

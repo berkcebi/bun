@@ -1,5 +1,8 @@
 use super::easing::*;
-use crate::effect::{MomentaryEffectPerformed, PerformedMomentaryEffect};
+use crate::{
+    effect::{MomentaryEffectPerformed, PerformedMomentaryEffect},
+    AppState,
+};
 use bevy::prelude::*;
 
 const FONT_PATH: &str = "fonts/04b03.ttf";
@@ -28,7 +31,12 @@ pub struct FloatingTextPlugin;
 
 impl Plugin for FloatingTextPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(spawn_system).add_system(animate_system);
+        app.add_system_set(
+            SystemSet::on_update(AppState::Game)
+                .with_system(spawn_system)
+                .with_system(animate_system),
+        )
+        .add_system_set(SystemSet::on_exit(AppState::Game).with_system(despawn_system));
     }
 }
 
@@ -96,5 +104,11 @@ fn animate_system(
                 text.sections[0].style.color.set_a(color_alpha);
             }
         }
+    }
+}
+
+fn despawn_system(mut commands: Commands, query: Query<Entity, With<FloatingText>>) {
+    for entity in query.iter() {
+        commands.entity(entity).despawn();
     }
 }
