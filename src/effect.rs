@@ -1,6 +1,7 @@
 use crate::{
     critical::{Critical, CRITICAL_MULTIPLIER},
     health::Health,
+    AppState,
 };
 use bevy::prelude::*;
 use rand::prelude::*;
@@ -85,10 +86,13 @@ impl Plugin for EffectPlugin {
         app.add_event::<PerformEffect>()
             .add_event::<MomentaryEffectPerformed>()
             .add_event::<PerformMomentaryEffect>()
-            .add_system(perform_effect_system)
-            .add_system(perform_momentary_effect_system)
-            .add_system(tick_periodic_momentary_effects_system)
-            .add_system(tick_lasting_effects_system);
+            .add_system_set(
+                SystemSet::on_update(AppState::Game)
+                    .with_system(perform_effect_system)
+                    .with_system(perform_momentary_effect_system)
+                    .with_system(tick_periodic_momentary_effects_system)
+                    .with_system(tick_lasting_effects_system),
+            );
     }
 }
 

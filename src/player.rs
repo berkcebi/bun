@@ -1,11 +1,10 @@
 use crate::{
     ability::{Ability, TryAbility},
-    creature::{Creature, CreatureBundle},
+    creature::Creature,
     effect::{Effect, LastingEffect, MomentaryEffect, MomentaryEffectSchedule},
     position::ChangePosition,
-    sprite::Sprite,
     target::Target,
-    CAMERA_SCALE, WINDOW_HEIGHT, WINDOW_WIDTH,
+    AppState, CAMERA_SCALE, WINDOW_HEIGHT, WINDOW_WIDTH,
 };
 use bevy::prelude::*;
 
@@ -23,23 +22,12 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<PlayerTargetChanged>()
-            .add_startup_system(spawn_system)
-            .add_system(handle_keyboard_input_system)
-            .add_system(handle_cursor_moved_system);
+        app.add_event::<PlayerTargetChanged>().add_system_set(
+            SystemSet::on_update(AppState::Game)
+                .with_system(handle_keyboard_input_system)
+                .with_system(handle_cursor_moved_system),
+        );
     }
-}
-
-fn spawn_system(mut commands: Commands, texture_atlases: Res<Assets<TextureAtlas>>) {
-    commands
-        .spawn_bundle(CreatureBundle::new(160, 100))
-        .insert(Player)
-        .insert_bundle(SpriteSheetBundle {
-            texture_atlas: texture_atlases.get_handle(Sprite::SHEET_PATH),
-            sprite: TextureAtlasSprite::new(Sprite::Player.index()),
-            transform: Transform::from_translation(Vec3::new(-80.0, 0.0, 0.0)),
-            ..Default::default()
-        });
 }
 
 fn handle_keyboard_input_system(

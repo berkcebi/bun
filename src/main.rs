@@ -5,6 +5,7 @@ mod effect;
 mod enemy;
 mod health;
 mod interface;
+mod level;
 mod mana;
 mod player;
 mod position;
@@ -14,8 +15,8 @@ mod target;
 use ability::AbilityPlugin;
 use bevy::prelude::*;
 use effect::EffectPlugin;
-use enemy::EnemyPlugin;
 use interface::InterfacePlugins;
+use level::LevelPlugin;
 use mana::ManaPlugin;
 use player::PlayerPlugin;
 use position::PositionPlugin;
@@ -24,6 +25,12 @@ use sprite::Sprite;
 const WINDOW_WIDTH: f32 = 800.0;
 const WINDOW_HEIGHT: f32 = 600.0;
 const CAMERA_SCALE: f32 = 1.0 / 2.0;
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+enum AppState {
+    Menu,
+    Game,
+}
 
 fn main() {
     App::new()
@@ -35,15 +42,17 @@ fn main() {
             resizable: false,
             ..Default::default()
         })
+        .add_state(AppState::Game)
         .add_plugins(DefaultPlugins)
         .add_plugins(InterfacePlugins)
         .add_plugin(AbilityPlugin)
         .add_plugin(EffectPlugin)
-        .add_plugin(EnemyPlugin)
+        .add_plugin(LevelPlugin)
         .add_plugin(ManaPlugin)
         .add_plugin(PositionPlugin)
         .add_plugin(PlayerPlugin)
         .add_startup_system(setup_system)
+        .add_system(handle_keyboard_input_system)
         .add_system(bevy::input::system::exit_on_esc_system)
         .run();
 }
@@ -66,4 +75,18 @@ fn setup_system(
     let mut camera_bundle = OrthographicCameraBundle::new_2d();
     camera_bundle.orthographic_projection.scale = CAMERA_SCALE;
     commands.spawn_bundle(camera_bundle);
+}
+
+// FIXME: Move to plugins.
+fn handle_keyboard_input_system(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut app_state: ResMut<State<AppState>>,
+) {
+    if keyboard_input.just_pressed(KeyCode::Space) {
+        if *app_state.current() == AppState::Menu {
+            app_state.replace(AppState::Game).unwrap();
+        } else {
+            app_state.replace(AppState::Menu).unwrap();
+        }
+    }
 }

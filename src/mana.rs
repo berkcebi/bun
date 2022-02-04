@@ -1,4 +1,4 @@
-use crate::ability::CastAbility;
+use crate::{ability::CastAbility, AppState};
 use bevy::prelude::*;
 
 const REGEN_MANA_POINTS: u16 = 1;
@@ -41,11 +41,13 @@ pub struct ManaPlugin;
 impl Plugin for ManaPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(
-            SystemSet::new()
+            SystemSet::on_update(AppState::Game)
                 .with_run_criteria(bevy::core::FixedTimestep::step(REGEN_MANA_INTERVAL))
                 .with_system(regen_mana_system),
         )
-        .add_system(remove_regen_mana_cooldown_system);
+        .add_system_set(
+            SystemSet::on_update(AppState::Game).with_system(remove_regen_mana_cooldown_system),
+        );
     }
 }
 

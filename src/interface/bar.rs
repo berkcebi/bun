@@ -1,5 +1,7 @@
 use super::{HEIGHT, TRANSLATION_Z, WIDTH};
-use crate::{ability::CastAbility, enemy::Enemy, health::Health, mana::Mana, player::Player};
+use crate::{
+    ability::CastAbility, enemy::Enemy, health::Health, mana::Mana, player::Player, AppState,
+};
 use bevy::{ecs::component::Component, prelude::*};
 
 const PLAYER_WIDTH: f32 = 96.0;
@@ -102,15 +104,19 @@ pub struct BarPlugin;
 
 impl Plugin for BarPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(spawn_player_system)
-            .add_system(spawn_enemy_system)
-            .add_system(update_text_system::<HealthBar>)
-            .add_system(update_indicator_system::<HealthBar>)
-            .add_system(update_text_system::<ManaBar>)
-            .add_system(update_indicator_system::<ManaBar>)
-            .add_system(update_text_system::<CastBar>)
-            .add_system(update_indicator_system::<CastBar>)
-            .add_system(update_cast_visibility_system);
+        app.add_system_set(
+            SystemSet::on_update(AppState::Game)
+                .with_system(spawn_player_system)
+                .with_system(spawn_enemy_system)
+                .with_system(update_text_system::<HealthBar>)
+                .with_system(update_indicator_system::<HealthBar>)
+                .with_system(update_text_system::<ManaBar>)
+                .with_system(update_indicator_system::<ManaBar>)
+                .with_system(update_text_system::<CastBar>)
+                .with_system(update_indicator_system::<CastBar>)
+                .with_system(update_cast_visibility_system),
+        )
+        .add_system_set(SystemSet::on_exit(AppState::Game).with_system(despawn_system));
     }
 }
 
@@ -134,6 +140,7 @@ fn spawn_player_system(
             TRANSLATION_Z,
         ),
         Vec2::new(PLAYER_WIDTH, PLAYER_HEIGHT),
+        true,
         HealthBar { entity },
         &mut commands,
         Some(font.clone()),
@@ -147,6 +154,7 @@ fn spawn_player_system(
             TRANSLATION_Z,
         ),
         Vec2::new(PLAYER_WIDTH, PLAYER_HEIGHT),
+        true,
         ManaBar { entity },
         &mut commands,
         Some(font.clone()),
@@ -156,6 +164,7 @@ fn spawn_player_system(
         CAST_COLOR,
         Vec3::new(0.0, HEIGHT / -4.0, TRANSLATION_Z),
         Vec2::new(PLAYER_CAST_WIDTH, PLAYER_HEIGHT),
+        false,
         CastBar { entity },
         &mut commands,
         Some(font),
@@ -172,6 +181,7 @@ fn spawn_enemy_system(mut commands: Commands, query: Query<Entity, Added<Enemy>>
                 TRANSLATION_Z,
             ),
             Vec2::new(crate::Sprite::SIZE, ENEMY_HEIGHT),
+            true,
             HealthBar { entity },
             &mut commands,
             None,
@@ -258,10 +268,26 @@ fn update_cast_visibility_system(
     }
 }
 
+fn despawn_system(
+    mut commands: Commands,
+    health_query: Query<Entity, With<HealthBar>>,
+    mana_query: Query<Entity, With<ManaBar>>,
+    cast_query: Query<Entity, With<CastBar>>,
+) {
+    for entity in health_query
+        .iter()
+        .chain(mana_query.iter())
+        .chain(cast_query.iter())
+    {
+        commands.entity(entity).despawn_recursive();
+    }
+}
+
 fn spawn<T: Component>(
     color: Color,
     translation: Vec3,
     size: Vec2,
+    is_visible: bool,
     component: T,
     commands: &mut Commands,
     font_handle: Option<Handle<Font>>,
@@ -277,6 +303,7 @@ fn spawn<T: Component>(
                 ..Default::default()
             },
             transform: Transform::from_translation(translation),
+            visibility: Visibility { is_visible },
             ..Default::default()
         })
         .insert(component)
