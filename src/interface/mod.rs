@@ -1,12 +1,14 @@
 mod bar;
 mod easing;
 mod floating_text;
+mod menu;
 mod target_indicator;
 
 use crate::{CAMERA_SCALE, WINDOW_HEIGHT, WINDOW_WIDTH};
 use bar::BarPlugin;
 use bevy::app::{PluginGroup, PluginGroupBuilder};
 use floating_text::FloatingTextPlugin;
+use menu::MenuPlugin;
 use target_indicator::TargetIndicatorPlugin;
 
 const WIDTH: f32 = WINDOW_WIDTH * CAMERA_SCALE;
@@ -20,6 +22,7 @@ impl PluginGroup for InterfacePlugins {
     fn build(&mut self, group: &mut PluginGroupBuilder) {
         group.add(BarPlugin);
         group.add(FloatingTextPlugin);
+        group.add(MenuPlugin);
         group.add(TargetIndicatorPlugin);
     }
 }

@@ -1,6 +1,7 @@
 use crate::{
     creature::{Creature, CreatureBundle},
     enemy::Enemy,
+    health::Health,
     player::Player,
     sprite::Sprite,
     AppState,
@@ -15,6 +16,7 @@ pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(SystemSet::on_enter(AppState::Game).with_system(spawn_system))
+            .add_system_set(SystemSet::on_update(AppState::Game).with_system(end_system))
             .add_system_set(SystemSet::on_exit(AppState::Game).with_system(despawn_system));
     }
 }
@@ -40,6 +42,31 @@ fn spawn_system(mut commands: Commands, texture_atlases: Res<Assets<TextureAtlas
                 transform: Transform::from_translation(Vec3::from(goblin_translation)),
                 ..Default::default()
             });
+    }
+}
+
+fn end_system(
+    mut app_state: ResMut<State<AppState>>,
+    player_query: Query<&Health, With<Player>>,
+    enemy_query: Query<&Health, With<Enemy>>,
+) {
+    let player_health = player_query.single();
+
+    if player_health.points == 0 {
+        info!("Player died.");
+
+        app_state.set(AppState::Menu).unwrap();
+        return;
+    }
+
+    if enemy_query
+        .iter()
+        .all(|enemy_health| enemy_health.points == 0)
+    {
+        info!("All enemies died.");
+
+        app_state.set(AppState::Menu).unwrap();
+        return;
     }
 }
 
