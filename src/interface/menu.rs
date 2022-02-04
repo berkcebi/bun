@@ -1,4 +1,4 @@
-use crate::AppState;
+use crate::{level::LevelResult, AppState};
 use bevy::prelude::*;
 
 const FONT_PATH: &str = "fonts/04b03.ttf";
@@ -19,7 +19,11 @@ impl Plugin for MenuPlugin {
     }
 }
 
-fn spawn_system(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn spawn_system(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    level_result: Res<LevelResult>,
+) {
     let text_style = TextStyle {
         font: asset_server.load(FONT_PATH),
         font_size: FONT_SIZE,
@@ -30,13 +34,15 @@ fn spawn_system(mut commands: Commands, asset_server: Res<AssetServer>) {
         horizontal: HorizontalAlign::Center,
     };
 
+    let text_value = match *level_result {
+        LevelResult::None => "Press Return to start.",
+        LevelResult::Won => "Not bad, press Return to restart.",
+        LevelResult::Lost => "Wrecked! Press Return to restart.",
+    };
+
     commands
         .spawn_bundle(Text2dBundle {
-            text: Text::with_section(
-                "Press Return to start".to_string(),
-                text_style,
-                text_alignment,
-            ),
+            text: Text::with_section(text_value.to_string(), text_style, text_alignment),
             ..Default::default()
         })
         .insert(Menu);
