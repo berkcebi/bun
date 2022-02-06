@@ -244,6 +244,7 @@ fn perform_ability_system(
             });
         }
 
-        info!("Casted {}.", perform_ability.ability.name);
+        let ability_name = perform_ability.ability.name;
+        info!("Casted {ability_name}.");
     }
 }

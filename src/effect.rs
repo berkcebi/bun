@@ -172,7 +172,7 @@ fn perform_momentary_effect_system(
                     // TODO: Remove from game.
                     health.points = 0;
 
-                    info!("{:?} died.", target);
+                    info!("{target:?} died.");
                 }
 
                 momentary_effect_performed_event_writer.send(MomentaryEffectPerformed {
