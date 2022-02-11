@@ -4,12 +4,15 @@ use crate::{
     health::Health,
     player::Player,
     sprite::Sprite,
+    zone::Zone,
     AppState,
 };
 use bevy::prelude::*;
 
 const PLAYER_TRANSLATION: (f32, f32, f32) = (-80.0, 0.0, 0.0);
 const GOBLIN_TRANSLATIONS: [(f32, f32, f32); 2] = [(80.0, 30.0, 0.0), (80.0, -30.0, 0.0)];
+const ZONE_COLUMNS: usize = 22;
+const ZONE_ROWS: usize = 16;
 
 /// Resource to keep track of the level's result. Set to `LevelResult::None` while the level is in progress.
 pub enum LevelResult {
@@ -17,6 +20,9 @@ pub enum LevelResult {
     Won,
     Lost,
 }
+
+#[derive(Component)]
+struct Tile;
 
 pub struct LevelPlugin;
 
@@ -35,6 +41,24 @@ fn spawn_system(
     mut level_result: ResMut<LevelResult>,
 ) {
     *level_result = LevelResult::None;
+
+    let zone = Zone::new(ZONE_COLUMNS, ZONE_ROWS);
+    for (x, row_tiles) in zone.tiles.iter().enumerate() {
+        for (y, tile) in row_tiles.iter().enumerate() {
+            if let Some(tile) = tile {
+                commands
+                    .spawn_bundle(SpriteSheetBundle {
+                        texture_atlas: texture_atlases.get_handle(Sprite::SHEET_PATH),
+                        sprite: TextureAtlasSprite::new(tile.sprite.index()),
+                        transform: Transform::from_translation(
+                            zone.tile_position(x, y).extend(0.0),
+                        ),
+                        ..Default::default()
+                    })
+                    .insert(Tile);
+            }
+        }
+    }
 
     commands
         .spawn_bundle(CreatureBundle::new(160, 100))
@@ -78,8 +102,12 @@ fn end_system(
     }
 }
 
-fn despawn_system(mut commands: Commands, query: Query<Entity, With<Creature>>) {
-    for creature_entity in query.iter() {
-        commands.entity(creature_entity).despawn();
+fn despawn_system(
+    mut commands: Commands,
+    tile_query: Query<Entity, With<Tile>>,
+    creature_query: Query<Entity, With<Creature>>,
+) {
+    for entity in tile_query.iter().chain(creature_query.iter()) {
+        commands.entity(entity).despawn();
     }
 }

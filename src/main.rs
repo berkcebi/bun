@@ -11,6 +11,7 @@ mod player;
 mod position;
 mod sprite;
 mod target;
+mod zone;
 
 use ability::AbilityPlugin;
 use bevy::prelude::*;
