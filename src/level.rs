@@ -8,6 +8,7 @@ use crate::{
     AppState,
 };
 use bevy::prelude::*;
+use bevy_rapier2d::prelude::*;
 
 const PLAYER_TRANSLATION: (f32, f32, f32) = (-80.0, 0.0, 0.0);
 const GOBLIN_TRANSLATIONS: [(f32, f32, f32); 2] = [(80.0, 30.0, 0.0), (80.0, -30.0, 0.0)];
@@ -46,16 +47,25 @@ fn spawn_system(
     for (x, row_tiles) in zone.tiles.iter().enumerate() {
         for (y, tile) in row_tiles.iter().enumerate() {
             if let Some(tile) = tile {
-                commands
+                let tile_position = zone.tile_position(x, y);
+                let entity = commands
                     .spawn_bundle(SpriteSheetBundle {
                         texture_atlas: texture_atlases.get_handle(Sprite::SHEET_PATH),
                         sprite: TextureAtlasSprite::new(tile.sprite.index()),
-                        transform: Transform::from_translation(
-                            zone.tile_position(x, y).extend(0.0),
-                        ),
+                        transform: Transform::from_translation(tile_position.extend(0.0)),
                         ..Default::default()
                     })
-                    .insert(Tile);
+                    .insert(Tile)
+                    .id();
+
+                if tile.is_obstructed {
+                    let cuboid_half_extent = crate::zone::Tile::SIZE / 2.0;
+                    commands.entity(entity).insert_bundle(ColliderBundle {
+                        shape: ColliderShape::cuboid(cuboid_half_extent, cuboid_half_extent).into(),
+                        position: (tile_position, 0.0).into(),
+                        ..Default::default()
+                    });
+                }
             }
         }
     }
@@ -66,7 +76,7 @@ fn spawn_system(
         .insert_bundle(SpriteSheetBundle {
             texture_atlas: texture_atlases.get_handle(Sprite::SHEET_PATH),
             sprite: TextureAtlasSprite::new(Sprite::Player.index()),
-            transform: Transform::from_translation(Vec3::from(PLAYER_TRANSLATION)),
+            transform: Transform::from_translation(PLAYER_TRANSLATION.into()),
             ..Default::default()
         });
 
@@ -77,7 +87,7 @@ fn spawn_system(
             .insert_bundle(SpriteSheetBundle {
                 texture_atlas: texture_atlases.get_handle(Sprite::SHEET_PATH),
                 sprite: TextureAtlasSprite::new(Sprite::Goblin.index()),
-                transform: Transform::from_translation(Vec3::from(goblin_translation)),
+                transform: Transform::from_translation(goblin_translation.into()),
                 ..Default::default()
             });
     }

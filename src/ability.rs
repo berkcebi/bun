@@ -5,6 +5,7 @@ use crate::{
     AppState,
 };
 use bevy::prelude::*;
+use bevy_rapier2d::prelude::*;
 
 const ABILITY_COOLDOWN_DURATION: f32 = 1.5;
 
@@ -97,6 +98,7 @@ fn remove_ability_cooldown_system(
 
 fn try_ability_system(
     mut commands: Commands,
+    query_pipeline: Res<QueryPipeline>,
     mut try_ability_event_reader: EventReader<TryAbility>,
     mut perform_ability_event_writer: EventWriter<PerformAbility>,
     mut query: Query<(
@@ -108,6 +110,7 @@ fn try_ability_system(
         Option<&ChangingPosition>,
     )>,
     target_query: Query<&Transform>,
+    collider_query: QueryPipelineColliderComponentsQuery,
 ) {
     for try_ability in try_ability_event_reader.iter() {
         let target = match try_ability.target {
@@ -162,8 +165,28 @@ fn try_ability_system(
             let target_transform = target_query.get(target).unwrap();
             let target_position = target_transform.translation.truncate();
 
-            if position.distance(target_position) > try_ability.ability.range {
+            let direction = target_position - position;
+            let direction_length = direction.length();
+            if direction_length > try_ability.ability.range {
                 info!("Out of range.");
+
+                continue;
+            }
+
+            let collider_set = QueryPipelineColliderComponentsSet(&collider_query);
+            let ray = Ray::new(position.into(), direction.normalize().into());
+            if query_pipeline
+                .cast_ray(
+                    &collider_set,
+                    &ray,
+                    direction_length,
+                    true,
+                    InteractionGroups::all(),
+                    None,
+                )
+                .is_some()
+            {
+                info!("Not in line of sight.");
 
                 continue;
             }
