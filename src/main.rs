@@ -11,9 +11,11 @@ mod player;
 mod position;
 mod sprite;
 mod target;
+mod zone;
 
 use ability::AbilityPlugin;
 use bevy::prelude::*;
+use bevy_rapier2d::prelude::*;
 use effect::EffectPlugin;
 use interface::InterfacePlugins;
 use level::LevelPlugin;
@@ -44,6 +46,7 @@ fn main() {
         })
         .add_state(AppState::Game)
         .add_plugins(DefaultPlugins)
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(InterfacePlugins)
         .add_plugin(AbilityPlugin)
         .add_plugin(EffectPlugin)
