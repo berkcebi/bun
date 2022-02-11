@@ -62,7 +62,7 @@ fn spawn_system(
                     let cuboid_half_extent = crate::zone::Tile::SIZE / 2.0;
                     commands.entity(entity).insert_bundle(ColliderBundle {
                         shape: ColliderShape::cuboid(cuboid_half_extent, cuboid_half_extent).into(),
-                        position: (tile_position, 0.0).into(),
+                        position: tile_position.into(),
                         ..Default::default()
                     });
                 }
