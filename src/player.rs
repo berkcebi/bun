@@ -38,25 +38,25 @@ fn handle_keyboard_input_system(
 ) {
     let (entity, target) = query.single();
 
-    let mut direction = Vec3::ZERO;
+    let mut direction = Vec2::ZERO;
 
     if keyboard_input.pressed(KeyCode::A) {
-        direction.x -= 1.0;
+        direction -= Vec2::X;
     }
 
     if keyboard_input.pressed(KeyCode::D) {
-        direction.x += 1.0;
+        direction += Vec2::X;
     }
 
     if keyboard_input.pressed(KeyCode::S) {
-        direction.y -= 1.0;
+        direction -= Vec2::Y;
     }
 
     if keyboard_input.pressed(KeyCode::W) {
-        direction.y += 1.0;
+        direction += Vec2::Y;
     }
 
-    if direction != Vec3::ZERO {
+    if direction != Vec2::ZERO {
         change_position_event_writer.send(ChangePosition { entity, direction });
     }
 

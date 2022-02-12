@@ -4,7 +4,7 @@ use bevy::prelude::*;
 /// Event to change position towards a direction.
 pub struct ChangePosition {
     pub entity: Entity,
-    pub direction: Vec3,
+    pub direction: Vec2,
 }
 
 /// Component to indicate position changing.
@@ -31,7 +31,8 @@ fn change_position_system(
     let mut entities_changing_position = vec![];
     for change_position in change_position_event_reader.iter() {
         let (entity, mut transform, moving) = query.get_mut(change_position.entity).unwrap();
-        transform.translation += change_position.direction * time.delta_seconds() * CREATURE_SPEED;
+        transform.translation +=
+            change_position.direction.extend(0.0) * time.delta_seconds() * CREATURE_SPEED;
 
         if moving.is_none() {
             commands.entity(entity).insert(ChangingPosition);
