@@ -1,9 +1,11 @@
 use super::easing::*;
 use crate::{
     effect::{MomentaryEffectPerformed, PerformedMomentaryEffect},
+    sprite::Sprite,
     AppState,
 };
 use bevy::prelude::*;
+use std::collections::HashMap;
 
 const FONT_PATH: &str = "fonts/04b03.ttf";
 const FONT_SIZE: f32 = 12.0;
@@ -11,17 +13,22 @@ const FONT_SIZE: f32 = 12.0;
 const DAMAGE_COLOR: Color = Color::rgb(231.0 / 255.0, 39.0 / 255.0, 37.0 / 255.0);
 const HEAL_COLOR: Color = Color::rgb(0.0, 231.0 / 255.0, 0.0);
 
+const TRANSLATION_Y: f32 = 12.0;
+const TRANSLATION_X: [f32; 3] = [0.0, 18.0, -18.0];
+
 const ANIMATION_TRANSLATION_Y: f32 = 6.0;
 const ANIMATION_DURATION: f32 = 1.0;
 
 #[derive(Component)]
 struct FloatingText {
+    entity: Entity,
     animation_timer: Timer,
 }
 
 impl FloatingText {
-    pub fn new() -> Self {
+    pub fn new(entity: Entity) -> Self {
         Self {
+            entity,
             animation_timer: Timer::from_seconds(ANIMATION_DURATION, false),
         }
     }
@@ -44,10 +51,8 @@ fn spawn_system(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut momentary_effect_performed_event_reader: EventReader<MomentaryEffectPerformed>,
-    query: Query<&Transform>,
 ) {
     for momentary_effect_performed in momentary_effect_performed_event_reader.iter() {
-        // TODO: Change animation based on critical.
         let (points, _, color) = match momentary_effect_performed.performed_momentary_effect {
             PerformedMomentaryEffect::Damage(points, is_critical) => {
                 (points, is_critical, DAMAGE_COLOR)
@@ -56,11 +61,6 @@ fn spawn_system(
                 (points, is_critical, HEAL_COLOR)
             }
         };
-
-        let entity_transform = query.get(momentary_effect_performed.entity).unwrap();
-        let translation =
-            entity_transform.translation + Vec3::new(0.0, crate::Sprite::SIZE / 2.0 + 12.0, 0.0);
-        let transform = Transform::from_translation(translation);
 
         let text_style = TextStyle {
             font: asset_server.load(FONT_PATH),
@@ -75,35 +75,62 @@ fn spawn_system(
         commands
             .spawn_bundle(Text2dBundle {
                 text: Text::with_section(points.to_string(), text_style, text_alignment),
-                transform,
+                visibility: Visibility { is_visible: false },
                 ..Default::default()
             })
-            .insert(FloatingText::new());
+            .insert(FloatingText::new(momentary_effect_performed.entity));
     }
 }
 
 fn animate_system(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(Entity, &mut Transform, &mut Text, &mut FloatingText)>,
+    mut query: Query<(
+        Entity,
+        &mut Transform,
+        &mut Visibility,
+        &mut Text,
+        &mut FloatingText,
+    )>,
+    entity_query: Query<&Transform, Without<FloatingText>>,
 ) {
-    for (entity, mut transform, mut text, mut floating_text) in query.iter_mut() {
-        let previous_translation_y = ANIMATION_TRANSLATION_Y
-            * ease(floating_text.animation_timer.percent(), Easing::OutQuart);
+    let mut index_by_entity = HashMap::new();
+    for (floating_text_entity, mut transform, mut visibility, mut text, mut floating_text) in
+        query.iter_mut()
+    {
         floating_text.animation_timer.tick(time.delta());
-
         if floating_text.animation_timer.finished() {
-            commands.entity(entity).despawn();
-        } else {
-            let translation_y = ANIMATION_TRANSLATION_Y
-                * ease(floating_text.animation_timer.percent(), Easing::OutQuart);
-            transform.translation.y += translation_y - previous_translation_y;
+            commands.entity(floating_text_entity).despawn();
 
-            if floating_text.animation_timer.percent() > 0.5 {
-                let color_alpha = 1.0 - (floating_text.animation_timer.percent() - 0.5) * 2.0;
-                text.sections[0].style.color.set_a(color_alpha);
-            }
+            continue;
         }
+
+        let index = index_by_entity.entry(floating_text.entity).or_insert(0);
+
+        if !visibility.is_visible {
+            visibility.is_visible = true;
+        }
+
+        // TODO: Change animation based on critical.
+
+        let entity_transform = entity_query.get(floating_text.entity).unwrap();
+
+        transform.translation = entity_transform.translation
+            + Vec3::new(
+                TRANSLATION_X[*index % TRANSLATION_X.len()],
+                Sprite::SIZE / 2.0
+                    + TRANSLATION_Y
+                    + ANIMATION_TRANSLATION_Y
+                        * ease(floating_text.animation_timer.percent(), Easing::OutQuart),
+                0.0,
+            );
+
+        if floating_text.animation_timer.percent() > 0.5 {
+            let color_alpha = 1.0 - (floating_text.animation_timer.percent() - 0.5) * 2.0;
+            text.sections[0].style.color.set_a(color_alpha);
+        }
+
+        *index += 1;
     }
 }
 
