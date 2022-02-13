@@ -8,7 +8,7 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use std::collections::HashMap;
 
-const ABILITY_COOLDOWN_DURATION: f32 = 1.5;
+const ABILITY_GLOBAL_COOLDOWN_DURATION: f32 = 1.5;
 
 #[derive(Clone, Copy)]
 pub struct Ability {
@@ -63,7 +63,7 @@ struct AbilityGlobalCooldown {
 impl Default for AbilityGlobalCooldown {
     fn default() -> Self {
         Self {
-            duration_timer: Timer::from_seconds(ABILITY_COOLDOWN_DURATION, false),
+            duration_timer: Timer::from_seconds(ABILITY_GLOBAL_COOLDOWN_DURATION, false),
         }
     }
 }
