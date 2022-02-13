@@ -1,4 +1,5 @@
 use crate::{
+    creature::Creature,
     effect::{Effect, LastingEffect, LastingEffects, PerformEffect},
     mana::{Mana, RegenManaCooldown},
     position::ChangingPosition,
@@ -18,8 +19,28 @@ pub struct Ability {
     pub cast_duration: f32,
     pub cooldown_duration: f32,
     pub range: f32,
-    pub effect: Effect,
-    pub secondary_effect: Option<Effect>,
+    pub effect: (Effect, AbilityTargetMode),
+    pub secondary_effect: Option<(Effect, AbilityTargetMode)>,
+}
+
+impl Ability {
+    fn requires_target(&self) -> bool {
+        let (_, target_mode) = self.effect;
+        let effect_requires_target = target_mode == AbilityTargetMode::Single;
+
+        let secondary_effect_requires_target = match self.secondary_effect {
+            Some((_, secondary_target_mode)) => secondary_target_mode == AbilityTargetMode::Single,
+            None => false,
+        };
+
+        effect_requires_target || secondary_effect_requires_target
+    }
+}
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub enum AbilityTargetMode {
+    Single,
+    Area,
 }
 
 /// Event to initiate an ability, if possible.
@@ -33,19 +54,19 @@ pub struct TryAbility {
 struct PerformAbility {
     source: Entity,
     ability: Ability,
-    target: Entity,
+    target: Option<Entity>,
 }
 
 /// Component to store cast duration for an ability.
 #[derive(Component)]
 pub struct CastAbility {
     pub ability: Ability,
-    pub target: Entity,
+    pub target: Option<Entity>,
     pub duration_timer: Timer,
 }
 
 impl CastAbility {
-    pub fn new(ability: Ability, target: Entity) -> Self {
+    pub fn new(ability: Ability, target: Option<Entity>) -> Self {
         Self {
             ability,
             target,
@@ -160,15 +181,6 @@ fn try_ability_system(
     collider_query: QueryPipelineColliderComponentsQuery,
 ) {
     for try_ability in try_ability_event_reader.iter() {
-        let target = match try_ability.target {
-            Some(result) => result,
-            None => {
-                info!("No target.");
-
-                continue;
-            }
-        };
-
         let (
             mana,
             ability_cooldowns,
@@ -222,36 +234,41 @@ fn try_ability_system(
             continue;
         }
 
-        if target != try_ability.source {
-            let position = transform.translation.truncate();
+        if try_ability.ability.requires_target() {
+            let target = match try_ability.target {
+                Some(result) => result,
+                None => {
+                    info!("No target.");
 
-            let target_transform = target_query.get(target).unwrap();
-            let target_position = target_transform.translation.truncate();
+                    continue;
+                }
+            };
 
-            let direction = target_position - position;
-            let direction_length = direction.length();
-            if direction_length > try_ability.ability.range {
-                info!("Out of range.");
+            if target != try_ability.source {
+                let position = transform.translation.truncate();
 
-                continue;
-            }
+                let target_transform = target_query.get(target).unwrap();
+                let target_position = target_transform.translation.truncate();
 
-            let collider_set = QueryPipelineColliderComponentsSet(&collider_query);
-            let ray = Ray::new(position.into(), direction.normalize().into());
-            if query_pipeline
-                .cast_ray(
-                    &collider_set,
-                    &ray,
-                    direction_length,
-                    true,
-                    InteractionGroups::all(),
-                    None,
-                )
-                .is_some()
-            {
-                info!("Not in line of sight.");
+                match verify_target_position(
+                    position,
+                    target_position,
+                    try_ability.ability.range,
+                    &query_pipeline,
+                    &collider_query,
+                ) {
+                    Err(TargetPositionError::Range) => {
+                        info!("Out of range.");
 
-                continue;
+                        continue;
+                    }
+                    Err(TargetPositionError::Sight) => {
+                        info!("Not in line of sight.");
+
+                        continue;
+                    }
+                    Ok(_) => (),
+                }
             }
         }
 
@@ -262,12 +279,12 @@ fn try_ability_system(
         if try_ability.ability.cast_duration > 0.0 {
             commands
                 .entity(try_ability.source)
-                .insert(CastAbility::new(try_ability.ability, target));
+                .insert(CastAbility::new(try_ability.ability, try_ability.target));
         } else {
             perform_ability_event_writer.send(PerformAbility {
                 source: try_ability.source,
                 ability: try_ability.ability,
-                target,
+                target: try_ability.target,
             });
         }
     }
@@ -302,14 +319,18 @@ fn cast_ability_system(
 
 fn perform_ability_system(
     mut commands: Commands,
+    query_pipeline: Res<QueryPipeline>,
     mut perform_ability_event_reader: EventReader<PerformAbility>,
     mut perform_effect_event_writer: EventWriter<PerformEffect>,
-    mut query: Query<(&mut Mana, &mut AbilityCooldowns)>,
+    mut query: Query<(&Transform, &mut Mana, &mut AbilityCooldowns)>,
+    creature_query: Query<(Entity, &Transform), With<Creature>>,
+    collider_query: QueryPipelineColliderComponentsQuery,
 ) {
     for perform_ability in perform_ability_event_reader.iter() {
-        // TODO: Validate range and line of sight in case the target moves while casting.
+        // TODO: Verify target position in case it moves while casting.
 
-        let (mut mana, mut ability_cooldowns) = query.get_mut(perform_ability.source).unwrap();
+        let (transform, mut mana, mut ability_cooldowns) =
+            query.get_mut(perform_ability.source).unwrap();
 
         mana.points -= perform_ability.ability.mana_points;
 
@@ -326,15 +347,77 @@ fn perform_ability_system(
             effects.push(secondary_effect);
         }
 
-        for effect in effects.iter() {
-            perform_effect_event_writer.send(PerformEffect {
-                source: perform_ability.source,
-                effect: *effect,
-                target: perform_ability.target,
-            });
+        for (effect, effect_targeting) in effects.iter() {
+            let targets = match effect_targeting {
+                AbilityTargetMode::Single => vec![perform_ability.target.unwrap()],
+                AbilityTargetMode::Area => {
+                    let position = transform.translation.truncate();
+
+                    creature_query
+                        .iter()
+                        .filter(|(creature_entity, creature_transform)| {
+                            *creature_entity != perform_ability.source
+                                && verify_target_position(
+                                    position,
+                                    creature_transform.translation.truncate(),
+                                    perform_ability.ability.range,
+                                    &query_pipeline,
+                                    &collider_query,
+                                )
+                                .is_ok()
+                        })
+                        .map(|(creature_entity, _)| creature_entity)
+                        .collect()
+                }
+            };
+
+            for target in &targets {
+                perform_effect_event_writer.send(PerformEffect {
+                    source: perform_ability.source,
+                    effect: *effect,
+                    target: *target,
+                });
+            }
         }
 
         let ability_name = perform_ability.ability.name;
         info!("Casted {ability_name}.");
     }
+}
+
+enum TargetPositionError {
+    Range,
+    Sight,
+}
+
+fn verify_target_position(
+    position: Vec2,
+    target_position: Vec2,
+    range: f32,
+    query_pipeline: &Res<QueryPipeline>,
+    query: &QueryPipelineColliderComponentsQuery,
+) -> Result<(), TargetPositionError> {
+    let direction = target_position - position;
+    let direction_length = direction.length();
+    if direction_length > range {
+        return Err(TargetPositionError::Range);
+    }
+
+    let collider_set = QueryPipelineColliderComponentsSet(&query);
+    let ray = Ray::new(position.into(), direction.normalize().into());
+    if query_pipeline
+        .cast_ray(
+            &collider_set,
+            &ray,
+            direction_length,
+            true,
+            InteractionGroups::all(),
+            None,
+        )
+        .is_some()
+    {
+        return Err(TargetPositionError::Sight);
+    }
+
+    Ok(())
 }

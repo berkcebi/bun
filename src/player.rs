@@ -1,5 +1,5 @@
 use crate::{
-    ability::{Ability, TryAbility},
+    ability::{Ability, AbilityTargetMode, TryAbility},
     creature::Creature,
     effect::{Effect, LastingEffect, MomentaryEffect, MomentaryEffectSchedule},
     position::ChangePosition,
@@ -70,13 +70,19 @@ fn handle_keyboard_input_system(
                 cast_duration: 2.5,
                 cooldown_duration: 0.0,
                 range: 200.0,
-                effect: Effect::Momentary(
-                    MomentaryEffect::Damage(30, 50),
-                    MomentaryEffectSchedule::Once,
+                effect: (
+                    Effect::Momentary(
+                        MomentaryEffect::Damage(30, 50),
+                        MomentaryEffectSchedule::Once,
+                    ),
+                    AbilityTargetMode::Single,
                 ),
-                secondary_effect: Some(Effect::Momentary(
-                    MomentaryEffect::Damage(2, 3),
-                    MomentaryEffectSchedule::Periodic(3.0, 12.0),
+                secondary_effect: Some((
+                    Effect::Momentary(
+                        MomentaryEffect::Damage(2, 3),
+                        MomentaryEffectSchedule::Periodic(3.0, 12.0),
+                    ),
+                    AbilityTargetMode::Single,
                 )),
             },
             target: target.entity,
@@ -88,14 +94,17 @@ fn handle_keyboard_input_system(
             source: entity,
             ability: Ability {
                 id: 1,
-                name: "Fire Blast",
-                mana_points: 15,
+                name: "Blaze",
+                mana_points: 30,
                 cast_duration: 0.0,
                 cooldown_duration: 10.0,
-                range: 125.0,
-                effect: Effect::Momentary(
-                    MomentaryEffect::Damage(20, 30),
-                    MomentaryEffectSchedule::Once,
+                range: 80.0,
+                effect: (
+                    Effect::Momentary(
+                        MomentaryEffect::Damage(20, 30),
+                        MomentaryEffectSchedule::Once,
+                    ),
+                    AbilityTargetMode::Area,
                 ),
                 secondary_effect: None,
             },
@@ -113,9 +122,9 @@ fn handle_keyboard_input_system(
                 cast_duration: 1.5,
                 cooldown_duration: 0.0,
                 range: 200.0,
-                effect: Effect::Momentary(
-                    MomentaryEffect::Heal(40, 60),
-                    MomentaryEffectSchedule::Once,
+                effect: (
+                    Effect::Momentary(MomentaryEffect::Heal(40, 60), MomentaryEffectSchedule::Once),
+                    AbilityTargetMode::Single,
                 ),
                 secondary_effect: None,
             },
@@ -133,7 +142,10 @@ fn handle_keyboard_input_system(
                 cast_duration: 0.0,
                 cooldown_duration: 45.0,
                 range: 200.0,
-                effect: Effect::Lasting(LastingEffect::Silence, 4.0),
+                effect: (
+                    Effect::Lasting(LastingEffect::Silence, 4.0),
+                    AbilityTargetMode::Single,
+                ),
                 secondary_effect: None,
             },
             target: target.entity,
