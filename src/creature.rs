@@ -1,4 +1,5 @@
 use crate::{
+    ability::AbilityCooldowns,
     critical::Critical,
     effect::{LastingEffects, PeriodicMomentaryEffects},
     health::Health,
@@ -20,6 +21,7 @@ pub struct CreatureBundle {
     critical: Critical,
     periodic_momentary_effects: PeriodicMomentaryEffects,
     lasting_effects: LastingEffects,
+    ability_cooldowns: AbilityCooldowns,
     target: Target,
 }
 
@@ -32,6 +34,7 @@ impl CreatureBundle {
             critical: Critical::default(),
             periodic_momentary_effects: PeriodicMomentaryEffects::default(),
             lasting_effects: LastingEffects::default(),
+            ability_cooldowns: AbilityCooldowns::default(),
             target: Target::default(),
         }
     }

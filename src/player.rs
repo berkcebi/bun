@@ -64,9 +64,11 @@ fn handle_keyboard_input_system(
         try_ability_event_writer.send(TryAbility {
             source: entity,
             ability: Ability {
+                id: 0,
                 name: "Fireball",
                 mana_points: 20,
                 cast_duration: 2.5,
+                cooldown_duration: 0.0,
                 range: 200.0,
                 effect: Effect::Momentary(
                     MomentaryEffect::Damage(30, 50),
@@ -85,9 +87,11 @@ fn handle_keyboard_input_system(
         try_ability_event_writer.send(TryAbility {
             source: entity,
             ability: Ability {
+                id: 1,
                 name: "Fire Blast",
                 mana_points: 15,
                 cast_duration: 0.0,
+                cooldown_duration: 10.0,
                 range: 125.0,
                 effect: Effect::Momentary(
                     MomentaryEffect::Damage(20, 30),
@@ -103,9 +107,11 @@ fn handle_keyboard_input_system(
         try_ability_event_writer.send(TryAbility {
             source: entity,
             ability: Ability {
+                id: 2,
                 name: "Lesser Heal",
                 mana_points: 15,
                 cast_duration: 1.5,
+                cooldown_duration: 0.0,
                 range: 200.0,
                 effect: Effect::Momentary(
                     MomentaryEffect::Heal(40, 60),
@@ -121,9 +127,11 @@ fn handle_keyboard_input_system(
         try_ability_event_writer.send(TryAbility {
             source: entity,
             ability: Ability {
+                id: 3,
                 name: "Silence",
                 mana_points: 20,
                 cast_duration: 0.0,
+                cooldown_duration: 45.0,
                 range: 200.0,
                 effect: Effect::Lasting(LastingEffect::Silence, 4.0),
                 secondary_effect: None,
