@@ -4,11 +4,11 @@ use crate::{
 };
 use bevy::{ecs::component::Component, prelude::*};
 
-const PLAYER_WIDTH: f32 = 96.0;
+const PLAYER_WIDTH: f32 = 104.0;
 const PLAYER_CAST_WIDTH: f32 = 144.0;
 const PLAYER_HEIGHT: f32 = 16.0;
 const ENEMY_HEIGHT: f32 = 4.0;
-const PLAYER_MARGIN: f32 = 16.0;
+const PLAYER_MARGIN: f32 = 8.0;
 const ENEMY_MARGIN: f32 = 1.0;
 const TEXT_VERTICAL_OFFSET: f32 = -0.5;
 
