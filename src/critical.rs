@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 pub const CRITICAL_MULTIPLIER: u16 = 2;
-const CRITICAL_PERCENT: f32 = 0.1;
+const CRITICAL_PERCENT: f32 = 0.05;
 
 #[derive(Component)]
 pub struct Critical {
