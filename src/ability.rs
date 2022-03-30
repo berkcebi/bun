@@ -50,6 +50,11 @@ pub struct TryAbility {
     pub target: Option<Entity>,
 }
 
+/// Event to cancel casting ability.
+pub struct CancelCastAbility {
+    pub source: Entity,
+}
+
 /// Internal event to perform an ability via a try ability event.
 struct PerformAbility {
     source: Entity,
@@ -121,6 +126,7 @@ pub struct AbilityPlugin;
 impl Plugin for AbilityPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<TryAbility>()
+            .add_event::<CancelCastAbility>()
             .add_event::<PerformAbility>()
             .add_system_set(
                 SystemSet::on_update(AppState::Game)
@@ -128,6 +134,7 @@ impl Plugin for AbilityPlugin {
                     .with_system(remove_ability_cooldowns_system)
                     .with_system(try_ability_system)
                     .with_system(cast_ability_system)
+                    .with_system(cancel_cast_ability_system)
                     .with_system(perform_ability_system),
             );
     }
@@ -314,6 +321,17 @@ fn cast_ability_system(
                 target: cast_ability.target,
             });
         }
+    }
+}
+
+fn cancel_cast_ability_system(
+    mut commands: Commands,
+    mut cancel_cast_ability_event_reader: EventReader<CancelCastAbility>,
+) {
+    for cancel_cast_ability in cancel_cast_ability_event_reader.iter() {
+        commands
+            .entity(cancel_cast_ability.source)
+            .remove::<CastAbility>();
     }
 }
 

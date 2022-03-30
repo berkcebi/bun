@@ -57,7 +57,6 @@ fn main() {
         .add_plugin(PositionPlugin)
         .add_plugin(PlayerPlugin)
         .add_startup_system(setup_system)
-        .add_system(bevy::input::system::exit_on_esc_system)
         .run();
 }
 

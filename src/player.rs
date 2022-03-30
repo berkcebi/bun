@@ -1,5 +1,5 @@
 use crate::{
-    ability::{Ability, AbilityTargetMode, TryAbility},
+    ability::{Ability, AbilityTargetMode, CancelCastAbility, CastAbility, TryAbility},
     creature::Creature,
     effect::{Effect, LastingEffect, MomentaryEffect, MomentaryEffectSchedule},
     position::ChangePosition,
@@ -34,9 +34,10 @@ fn handle_keyboard_input_system(
     keyboard_input: Res<Input<KeyCode>>,
     mut change_position_event_writer: EventWriter<ChangePosition>,
     mut try_ability_event_writer: EventWriter<TryAbility>,
-    query: Query<(Entity, &Target), With<Player>>,
+    mut cancel_cast_ability_event_writer: EventWriter<CancelCastAbility>,
+    query: Query<(Entity, &Target, Option<&CastAbility>), With<Player>>,
 ) {
-    let (entity, target) = query.single();
+    let (entity, target, cast_ability) = query.single();
 
     let mut direction = Vec2::ZERO;
 
@@ -150,6 +151,10 @@ fn handle_keyboard_input_system(
             },
             target: target.entity,
         });
+    }
+
+    if cast_ability.is_some() && keyboard_input.just_pressed(KeyCode::Escape) {
+        cancel_cast_ability_event_writer.send(CancelCastAbility { source: entity })
     }
 }
 
