@@ -60,11 +60,9 @@ fn spawn_system(
 
                 if tile.is_obstructed {
                     let cuboid_half_extent = crate::zone::Tile::SIZE / 2.0;
-                    commands.entity(entity).insert_bundle(ColliderBundle {
-                        shape: ColliderShape::cuboid(cuboid_half_extent, cuboid_half_extent).into(),
-                        position: tile_position.into(),
-                        ..Default::default()
-                    });
+                    commands
+                        .entity(entity)
+                        .insert(Collider::cuboid(cuboid_half_extent, cuboid_half_extent));
                 }
             }
         }

@@ -42,8 +42,6 @@ fn main() {
             width: WINDOW_WIDTH,
             height: WINDOW_HEIGHT,
             resizable: false,
-            // Turn vsync on to limit frame rate and reduce power consumption while debugging.
-            vsync: true,
             ..Default::default()
         })
         .add_state(AppState::Game)

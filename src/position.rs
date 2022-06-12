@@ -25,11 +25,10 @@ impl Plugin for PositionPlugin {
 fn change_position_system(
     mut commands: Commands,
     time: Res<Time>,
-    query_pipeline: Res<QueryPipeline>,
+    rapier_context: Res<RapierContext>,
     mut change_position_event_reader: EventReader<ChangePosition>,
     mut query: Query<(Entity, &mut Transform, Option<&ChangingPosition>)>,
     mut changing_position_query: Query<Entity, With<ChangingPosition>>,
-    collider_query: QueryPipelineColliderComponentsQuery,
 ) {
     let mut entities_changing_position = vec![];
     for change_position in change_position_event_reader.iter() {
@@ -42,11 +41,8 @@ fn change_position_system(
                 * time.delta_seconds()
                 * CREATURE_SPEED;
 
-            if !intersects_with_collider(
-                transform.translation + translation_delta,
-                &query_pipeline,
-                &collider_query,
-            ) {
+            if !intersects_with_collider(transform.translation + translation_delta, &rapier_context)
+            {
                 transform.translation += translation_delta;
                 changed_position = true;
             }
@@ -70,20 +66,14 @@ fn change_position_system(
     }
 }
 
-fn intersects_with_collider(
-    translation: Vec3,
-    query_pipeline: &Res<QueryPipeline>,
-    query: &QueryPipelineColliderComponentsQuery,
-) -> bool {
-    let collider_set = QueryPipelineColliderComponentsSet(query);
+fn intersects_with_collider(translation: Vec3, rapier_context: &Res<RapierContext>) -> bool {
     let cuboid_half_extent = Sprite::SIZE / 2.0;
-    let cuboid = Cuboid::new(Vec2::new(cuboid_half_extent, cuboid_half_extent).into());
-    let cuboid_position = translation.truncate().into();
+    let cuboid = Collider::cuboid(cuboid_half_extent, cuboid_half_extent);
 
     let mut intersects = false;
-    query_pipeline.intersections_with_shape(
-        &collider_set,
-        &cuboid_position,
+    rapier_context.intersections_with_shape(
+        translation.truncate(),
+        0.0,
         &cuboid,
         InteractionGroups::all(),
         None,

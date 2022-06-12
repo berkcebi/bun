@@ -172,7 +172,7 @@ fn remove_ability_cooldowns_system(time: Res<Time>, mut query: Query<&mut Abilit
 
 fn try_ability_system(
     mut commands: Commands,
-    query_pipeline: Res<QueryPipeline>,
+    rapier_context: Res<RapierContext>,
     mut try_ability_event_reader: EventReader<TryAbility>,
     mut perform_ability_event_writer: EventWriter<PerformAbility>,
     mut query: Query<(
@@ -185,7 +185,6 @@ fn try_ability_system(
         Option<&ChangingPosition>,
     )>,
     target_query: Query<&Transform>,
-    collider_query: QueryPipelineColliderComponentsQuery,
 ) {
     for try_ability in try_ability_event_reader.iter() {
         let (
@@ -261,8 +260,7 @@ fn try_ability_system(
                     position,
                     target_position,
                     try_ability.ability.range,
-                    &query_pipeline,
-                    &collider_query,
+                    &rapier_context,
                 ) {
                     Err(TargetPositionError::Range) => {
                         info!("Out of range.");
@@ -337,12 +335,11 @@ fn cancel_cast_ability_system(
 
 fn perform_ability_system(
     mut commands: Commands,
-    query_pipeline: Res<QueryPipeline>,
+    rapier_context: Res<RapierContext>,
     mut perform_ability_event_reader: EventReader<PerformAbility>,
     mut perform_effect_event_writer: EventWriter<PerformEffect>,
     mut query: Query<(&Transform, &mut Mana, &mut AbilityCooldowns)>,
     creature_query: Query<(Entity, &Transform), With<Creature>>,
-    collider_query: QueryPipelineColliderComponentsQuery,
 ) {
     for perform_ability in perform_ability_event_reader.iter() {
         // TODO: Verify target position in case it moves while casting.
@@ -379,8 +376,7 @@ fn perform_ability_system(
                                     position,
                                     creature_transform.translation.truncate(),
                                     perform_ability.ability.range,
-                                    &query_pipeline,
-                                    &collider_query,
+                                    &rapier_context,
                                 )
                                 .is_ok()
                         })
@@ -412,8 +408,7 @@ fn verify_target_position(
     position: Vec2,
     target_position: Vec2,
     range: f32,
-    query_pipeline: &Res<QueryPipeline>,
-    query: &QueryPipelineColliderComponentsQuery,
+    rapier_context: &Res<RapierContext>,
 ) -> Result<(), TargetPositionError> {
     let direction = target_position - position;
     let direction_length = direction.length();
@@ -421,12 +416,10 @@ fn verify_target_position(
         return Err(TargetPositionError::Range);
     }
 
-    let collider_set = QueryPipelineColliderComponentsSet(&query);
-    let ray = Ray::new(position.into(), direction.normalize().into());
-    if query_pipeline
+    if rapier_context
         .cast_ray(
-            &collider_set,
-            &ray,
+            position,
+            direction.normalize(),
             direction_length,
             true,
             InteractionGroups::all(),
