@@ -15,7 +15,7 @@ mod target;
 mod zone;
 
 use ability::AbilityPlugin;
-use bevy::prelude::*;
+use bevy::{prelude::*, render::texture::ImageSettings};
 use effect::EffectPlugin;
 use interface::InterfacePlugins;
 use level::LevelPlugin;
@@ -37,6 +37,7 @@ enum AppState {
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::BLACK))
+        .insert_resource(ImageSettings::default_nearest())
         .insert_resource(WindowDescriptor {
             title: "Bun".to_string(),
             width: WINDOW_WIDTH,
@@ -72,7 +73,7 @@ fn setup_system(
     // Use path as handle identifier.
     let _ = texture_atlases.set(Sprite::SHEET_PATH, texture_atlas);
 
-    let mut camera_bundle = OrthographicCameraBundle::new_2d();
-    camera_bundle.orthographic_projection.scale = CAMERA_SCALE;
+    let mut camera_bundle = Camera2dBundle::default();
+    camera_bundle.projection.scale = CAMERA_SCALE;
     commands.spawn_bundle(camera_bundle);
 }

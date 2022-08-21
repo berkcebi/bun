@@ -242,11 +242,10 @@ fn update_indicator_system<T: Bar>(
 }
 
 fn update_cast_visibility_system(
-    mut query: Query<(&Children, &mut Visibility, &CastBar)>,
-    mut child_visibility_query: Query<&mut Visibility, Without<CastBar>>,
+    mut query: Query<(&mut Visibility, &CastBar)>,
     cast_ability_query: Query<&CastAbility>,
 ) {
-    for (children, mut visibility, bar) in query.iter_mut() {
+    for (mut visibility, bar) in query.iter_mut() {
         let is_casting = match cast_ability_query.get(bar.entity()) {
             Ok(cast_ability) => {
                 cast_ability.duration_timer.elapsed_secs() > 0.0
@@ -256,15 +255,6 @@ fn update_cast_visibility_system(
         };
 
         visibility.is_visible = is_casting;
-
-        for &child in children.iter() {
-            let mut child_visibility = match child_visibility_query.get_mut(child) {
-                Ok(result) => result,
-                Err(_) => continue,
-            };
-
-            child_visibility.is_visible = is_casting;
-        }
     }
 }
 
@@ -323,13 +313,9 @@ fn spawn<T: Component>(
                     font_size: FONT_SIZE,
                     color: Color::WHITE,
                 };
-                let text_alignment = TextAlignment {
-                    vertical: VerticalAlign::Center,
-                    horizontal: HorizontalAlign::Center,
-                };
 
                 parent.spawn_bundle(Text2dBundle {
-                    text: Text::with_section("", text_style, text_alignment),
+                    text: Text::from_section("", text_style).with_alignment(TextAlignment::CENTER),
                     transform: Transform::from_translation(Vec3::new(
                         0.0,
                         TEXT_VERTICAL_OFFSET,

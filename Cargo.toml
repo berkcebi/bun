@@ -5,5 +5,5 @@ authors = ["Berk Çebi <berkcebi@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-bevy = "^0.7"
+bevy = "^0.8"
 rand = "^0.8"

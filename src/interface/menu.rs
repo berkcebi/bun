@@ -29,10 +29,6 @@ fn spawn_system(
         font_size: FONT_SIZE,
         color: Color::WHITE,
     };
-    let text_alignment = TextAlignment {
-        vertical: VerticalAlign::Center,
-        horizontal: HorizontalAlign::Center,
-    };
 
     let text_value = match *level_result {
         LevelResult::None => "Press Return to start.",
@@ -42,7 +38,8 @@ fn spawn_system(
 
     commands
         .spawn_bundle(Text2dBundle {
-            text: Text::with_section(text_value.to_string(), text_style, text_alignment),
+            text: Text::from_section(text_value.to_string(), text_style)
+                .with_alignment(TextAlignment::CENTER),
             ..Default::default()
         })
         .insert(Menu);

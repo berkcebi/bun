@@ -42,7 +42,7 @@ impl Plugin for ManaPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(
             SystemSet::on_update(AppState::Game)
-                .with_run_criteria(bevy::core::FixedTimestep::step(REGEN_MANA_INTERVAL))
+                .with_run_criteria(bevy::time::FixedTimestep::step(REGEN_MANA_INTERVAL))
                 .with_system(regen_mana_system),
         )
         .add_system_set(

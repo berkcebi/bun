@@ -67,14 +67,11 @@ fn spawn_system(
             font_size: FONT_SIZE,
             color,
         };
-        let text_alignment = TextAlignment {
-            vertical: VerticalAlign::Center,
-            horizontal: HorizontalAlign::Center,
-        };
 
         commands
             .spawn_bundle(Text2dBundle {
-                text: Text::with_section(points.to_string(), text_style, text_alignment),
+                text: Text::from_section(points.to_string(), text_style)
+                    .with_alignment(TextAlignment::CENTER),
                 visibility: Visibility { is_visible: false },
                 ..Default::default()
             })
