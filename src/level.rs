@@ -8,7 +8,6 @@ use crate::{
     AppState,
 };
 use bevy::prelude::*;
-use bevy_rapier2d::prelude::*;
 
 const PLAYER_TRANSLATION: (f32, f32, f32) = (-80.0, 0.0, 0.0);
 const GOBLIN_TRANSLATIONS: [(f32, f32, f32); 2] = [(80.0, 30.0, 0.0), (80.0, -30.0, 0.0)];
@@ -24,6 +23,9 @@ pub enum LevelResult {
 
 #[derive(Component)]
 struct Tile;
+
+#[derive(Component)]
+pub struct Obstacle;
 
 pub struct LevelPlugin;
 
@@ -59,10 +61,7 @@ fn spawn_system(
                     .id();
 
                 if tile.is_obstructed {
-                    let cuboid_half_extent = crate::zone::Tile::SIZE / 2.0;
-                    commands
-                        .entity(entity)
-                        .insert(Collider::cuboid(cuboid_half_extent, cuboid_half_extent));
+                    commands.entity(entity).insert(Obstacle);
                 }
             }
         }

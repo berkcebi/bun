@@ -1,12 +1,13 @@
 use crate::{
     creature::Creature,
     effect::{Effect, LastingEffect, LastingEffects, PerformEffect},
+    intersect_line_aabb::is_intersecting,
+    level::Obstacle,
     mana::{Mana, RegenManaCooldown},
     position::ChangingPosition,
     AppState,
 };
 use bevy::prelude::*;
-use bevy_rapier2d::prelude::*;
 use std::collections::HashMap;
 
 const ABILITY_GLOBAL_COOLDOWN_DURATION: f32 = 1.5;
@@ -172,7 +173,6 @@ fn remove_ability_cooldowns_system(time: Res<Time>, mut query: Query<&mut Abilit
 
 fn try_ability_system(
     mut commands: Commands,
-    rapier_context: Res<RapierContext>,
     mut try_ability_event_reader: EventReader<TryAbility>,
     mut perform_ability_event_writer: EventWriter<PerformAbility>,
     mut query: Query<(
@@ -185,6 +185,7 @@ fn try_ability_system(
         Option<&ChangingPosition>,
     )>,
     target_query: Query<&Transform>,
+    obstacle_query: Query<&Transform, With<Obstacle>>,
 ) {
     for try_ability in try_ability_event_reader.iter() {
         let (
@@ -260,7 +261,7 @@ fn try_ability_system(
                     position,
                     target_position,
                     try_ability.ability.range,
-                    &rapier_context,
+                    &obstacle_query,
                 ) {
                     Err(TargetPositionError::Range) => {
                         info!("Out of range.");
@@ -335,11 +336,11 @@ fn cancel_cast_ability_system(
 
 fn perform_ability_system(
     mut commands: Commands,
-    rapier_context: Res<RapierContext>,
     mut perform_ability_event_reader: EventReader<PerformAbility>,
     mut perform_effect_event_writer: EventWriter<PerformEffect>,
     mut query: Query<(&Transform, &mut Mana, &mut AbilityCooldowns)>,
     creature_query: Query<(Entity, &Transform), With<Creature>>,
+    obstacle_query: Query<&Transform, With<Obstacle>>,
 ) {
     for perform_ability in perform_ability_event_reader.iter() {
         // TODO: Verify target position in case it moves while casting.
@@ -376,7 +377,7 @@ fn perform_ability_system(
                                     position,
                                     creature_transform.translation.truncate(),
                                     perform_ability.ability.range,
-                                    &rapier_context,
+                                    &obstacle_query,
                                 )
                                 .is_ok()
                         })
@@ -408,7 +409,7 @@ fn verify_target_position(
     position: Vec2,
     target_position: Vec2,
     range: f32,
-    rapier_context: &Res<RapierContext>,
+    obstacle_query: &Query<&Transform, With<Obstacle>>,
 ) -> Result<(), TargetPositionError> {
     let direction = target_position - position;
     let direction_length = direction.length();
@@ -416,17 +417,14 @@ fn verify_target_position(
         return Err(TargetPositionError::Range);
     }
 
-    if rapier_context
-        .cast_ray(
+    if obstacle_query.iter().any(|obstacle_transform| {
+        is_intersecting(
             position,
-            direction.normalize(),
-            direction_length,
-            true,
-            InteractionGroups::all(),
-            None,
+            target_position,
+            obstacle_transform.translation.truncate(),
+            Vec2::splat(crate::zone::Tile::SIZE),
         )
-        .is_some()
-    {
+    }) {
         return Err(TargetPositionError::Sight);
     }
 
