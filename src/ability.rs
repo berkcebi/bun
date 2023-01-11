@@ -76,7 +76,7 @@ impl CastAbility {
         Self {
             ability,
             target,
-            duration_timer: Timer::from_seconds(ability.cast_duration, false),
+            duration_timer: Timer::from_seconds(ability.cast_duration, TimerMode::Once),
         }
     }
 }
@@ -90,7 +90,7 @@ struct AbilityGlobalCooldown {
 impl Default for AbilityGlobalCooldown {
     fn default() -> Self {
         Self {
-            duration_timer: Timer::from_seconds(ABILITY_GLOBAL_COOLDOWN_DURATION, false),
+            duration_timer: Timer::from_seconds(ABILITY_GLOBAL_COOLDOWN_DURATION, TimerMode::Once),
         }
     }
 }
@@ -117,7 +117,7 @@ impl AbilityCooldownInstance {
         assert!(ability.cooldown_duration > 0.0);
 
         Self {
-            duration_timer: Timer::from_seconds(ability.cooldown_duration, false),
+            duration_timer: Timer::from_seconds(ability.cooldown_duration, TimerMode::Once),
         }
     }
 }

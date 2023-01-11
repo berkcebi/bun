@@ -31,7 +31,7 @@ pub struct RegenManaCooldown {
 impl RegenManaCooldown {
     pub fn new() -> Self {
         Self {
-            duration_timer: Timer::from_seconds(REGEN_MANA_COOLDOWN_DURATION, false),
+            duration_timer: Timer::from_seconds(REGEN_MANA_COOLDOWN_DURATION, TimerMode::Once),
         }
     }
 }

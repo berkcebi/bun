@@ -15,6 +15,7 @@ const ZONE_COLUMNS: usize = 22;
 const ZONE_ROWS: usize = 16;
 
 /// Resource to keep track of the level's result. Set to `LevelResult::None` while the level is in progress.
+#[derive(Resource)]
 pub enum LevelResult {
     None,
     Won,
@@ -51,13 +52,15 @@ fn spawn_system(
             if let Some(tile) = tile {
                 let tile_position = zone.tile_position(x, y);
                 let entity = commands
-                    .spawn_bundle(SpriteSheetBundle {
-                        texture_atlas: texture_atlases.get_handle(Sprite::SHEET_PATH),
-                        sprite: TextureAtlasSprite::new(tile.sprite.index()),
-                        transform: Transform::from_translation(tile_position.extend(0.0)),
-                        ..Default::default()
-                    })
-                    .insert(Tile)
+                    .spawn((
+                        SpriteSheetBundle {
+                            texture_atlas: texture_atlases.get_handle(Sprite::SHEET_PATH),
+                            sprite: TextureAtlasSprite::new(tile.sprite.index()),
+                            transform: Transform::from_translation(tile_position.extend(0.0)),
+                            ..default()
+                        },
+                        Tile,
+                    ))
                     .id();
 
                 if tile.is_obstructed {
@@ -67,26 +70,28 @@ fn spawn_system(
         }
     }
 
-    commands
-        .spawn_bundle(CreatureBundle::new(160, 100))
-        .insert(Player)
-        .insert_bundle(SpriteSheetBundle {
+    commands.spawn((
+        CreatureBundle::new(160, 100),
+        Player,
+        SpriteSheetBundle {
             texture_atlas: texture_atlases.get_handle(Sprite::SHEET_PATH),
             sprite: TextureAtlasSprite::new(Sprite::Player.index()),
             transform: Transform::from_translation(PLAYER_TRANSLATION.into()),
-            ..Default::default()
-        });
+            ..default()
+        },
+    ));
 
     for goblin_translation in GOBLIN_TRANSLATIONS {
-        commands
-            .spawn_bundle(CreatureBundle::new(80, 40))
-            .insert(Enemy)
-            .insert_bundle(SpriteSheetBundle {
+        commands.spawn((
+            CreatureBundle::new(80, 40),
+            Enemy,
+            SpriteSheetBundle {
                 texture_atlas: texture_atlases.get_handle(Sprite::SHEET_PATH),
                 sprite: TextureAtlasSprite::new(Sprite::Goblin.index()),
                 transform: Transform::from_translation(goblin_translation.into()),
-                ..Default::default()
-            });
+                ..default()
+            },
+        ));
     }
 }
 

@@ -36,13 +36,14 @@ fn spawn_system(
         LevelResult::Lost => "Wrecked! Press Return to restart.",
     };
 
-    commands
-        .spawn_bundle(Text2dBundle {
+    commands.spawn((
+        Text2dBundle {
             text: Text::from_section(text_value.to_string(), text_style)
                 .with_alignment(TextAlignment::CENTER),
-            ..Default::default()
-        })
-        .insert(Menu);
+            ..default()
+        },
+        Menu,
+    ));
 }
 
 fn despawn_system(mut commands: Commands, query: Query<Entity, With<Menu>>) {

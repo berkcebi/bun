@@ -29,7 +29,7 @@ impl FloatingText {
     pub fn new(entity: Entity) -> Self {
         Self {
             entity,
-            animation_timer: Timer::from_seconds(ANIMATION_DURATION, false),
+            animation_timer: Timer::from_seconds(ANIMATION_DURATION, TimerMode::Once),
         }
     }
 }
@@ -68,14 +68,15 @@ fn spawn_system(
             color,
         };
 
-        commands
-            .spawn_bundle(Text2dBundle {
+        commands.spawn((
+            Text2dBundle {
                 text: Text::from_section(points.to_string(), text_style)
                     .with_alignment(TextAlignment::CENTER),
                 visibility: Visibility { is_visible: false },
-                ..Default::default()
-            })
-            .insert(FloatingText::new(momentary_effect_performed.entity));
+                ..default()
+            },
+            FloatingText::new(momentary_effect_performed.entity),
+        ));
     }
 }
 

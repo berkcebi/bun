@@ -119,8 +119,8 @@ fn perform_effect_system(
                     .instances
                     .push(PeriodicMomentaryEffectInstance {
                         effect,
-                        interval_timer: Timer::from_seconds(interval, true),
-                        duration_timer: Timer::from_seconds(duration, false),
+                        interval_timer: Timer::from_seconds(interval, TimerMode::Repeating),
+                        duration_timer: Timer::from_seconds(duration, TimerMode::Once),
                         source: perform_effect.source,
                     })
             }
@@ -130,7 +130,7 @@ fn perform_effect_system(
                     .unwrap();
                 lasting_effects.instances.push(LastingEffectInstance {
                     effect,
-                    duration_timer: Timer::from_seconds(duration, false),
+                    duration_timer: Timer::from_seconds(duration, TimerMode::Once),
                     source: perform_effect.source,
                 })
             }

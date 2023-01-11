@@ -19,10 +19,11 @@ const TRANSLATION_Z: f32 = 50.0;
 pub struct InterfacePlugins;
 
 impl PluginGroup for InterfacePlugins {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(BarPlugin);
-        group.add(FloatingTextPlugin);
-        group.add(MenuPlugin);
-        group.add(TargetIndicatorPlugin);
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>()
+            .add(BarPlugin)
+            .add(FloatingTextPlugin)
+            .add(MenuPlugin)
+            .add(TargetIndicatorPlugin)
     }
 }

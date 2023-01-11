@@ -286,25 +286,27 @@ fn spawn<T: Component>(
     background_color.set_a(BACKGROUND_COLOR_ALPHA);
 
     commands
-        .spawn_bundle(SpriteBundle {
-            sprite: Sprite {
-                custom_size: Some(size),
-                color: background_color,
-                ..Default::default()
+        .spawn((
+            SpriteBundle {
+                sprite: Sprite {
+                    custom_size: Some(size),
+                    color: background_color,
+                    ..default()
+                },
+                transform: Transform::from_translation(translation),
+                visibility: Visibility { is_visible },
+                ..default()
             },
-            transform: Transform::from_translation(translation),
-            visibility: Visibility { is_visible },
-            ..Default::default()
-        })
-        .insert(component)
+            component,
+        ))
         .with_children(|parent| {
-            parent.spawn_bundle(SpriteBundle {
+            parent.spawn(SpriteBundle {
                 sprite: Sprite {
                     custom_size: Some(Vec2::new(0.0, size.y)),
                     color,
-                    ..Default::default()
+                    ..default()
                 },
-                ..Default::default()
+                ..default()
             });
 
             if let Some(font_handle) = font_handle {
@@ -314,14 +316,14 @@ fn spawn<T: Component>(
                     color: Color::WHITE,
                 };
 
-                parent.spawn_bundle(Text2dBundle {
+                parent.spawn(Text2dBundle {
                     text: Text::from_section("", text_style).with_alignment(TextAlignment::CENTER),
                     transform: Transform::from_translation(Vec3::new(
                         0.0,
                         TEXT_VERTICAL_OFFSET,
                         1.0,
                     )),
-                    ..Default::default()
+                    ..default()
                 });
             }
         })

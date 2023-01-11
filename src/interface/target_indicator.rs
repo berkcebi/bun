@@ -34,12 +34,14 @@ fn spawn_system(
     };
 
     let entity = commands
-        .spawn_bundle(SpriteSheetBundle {
-            texture_atlas: texture_atlases.get_handle(crate::Sprite::SHEET_PATH),
-            sprite: TextureAtlasSprite::new(crate::Sprite::TargetIndicator.index()),
-            ..Default::default()
-        })
-        .insert(TargetIndicator)
+        .spawn((
+            SpriteSheetBundle {
+                texture_atlas: texture_atlases.get_handle(crate::Sprite::SHEET_PATH),
+                sprite: TextureAtlasSprite::new(crate::Sprite::TargetIndicator.index()),
+                ..default()
+            },
+            TargetIndicator,
+        ))
         .id();
 
     commands.entity(target_entity).add_child(entity);
